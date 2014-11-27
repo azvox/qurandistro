@@ -1,0 +1,15 @@
+name = MediaFront Kaltura
+description = This adds MediaFront support to the Kaltura module.
+core = 7.x
+package = MediaFront
+php = 5.2.4
+dependencies[] = mediafront
+dependencies[] = osmplayer
+dependencies[] = field_kaltura
+
+; Information added by drupal.org packaging script on 2013-09-13
+version = "7.x-2.2"
+core = "7.x"
+project = "mediafront"
+datestamp = "1379103236"
+

@@ -1,0 +1,547 @@
+<?php
+
+/**
+ * Implements hook_theme
+ */
+function html5_media_theme() {
+  $themes = array();
+
+  // Create a media player theme.
+  $themes['html5_player'] = array(
+    'render element' => 'element'
+  );
+
+  // Register the player templates
+  $info = html5_media_get_player_info();
+  foreach ($info['templates'] as $name => $info) {
+    $themes['html5_player_' . $name] = array(
+      'template' => 'minplayer_' . $name,
+      'variables' => array('params' => NULL),
+      'path' => $info['path']
+    );
+  }
+
+  return $themes;
+}
+
+/**
+ * Implements hook_library
+ */
+function html5_media_library() {
+  $path = drupal_get_path('module', 'html5_media') . '/player';
+  return array(
+    'html5_player' => array(
+      'title' => 'Media Player',
+      'version' => '0.1',
+      'js' => array(
+        $path . '/bin/minplayer.compressed.js' => array('group' => JS_LIBRARY)
+      ),
+      'dependencies' => array(
+        array('system', 'ui.slider')
+      )
+    ),
+    'html5_player_debug' => array(
+      'title' => 'Media Player (Debug Mode)',
+      'version' => '0.1',
+      'js' => array(
+        $path . '/src/minplayer.compatibility.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.flags.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.async.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.plugin.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.display.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.image.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.file.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.playLoader.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.players.base.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.players.html5.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.players.flash.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.players.minplayer.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.players.youtube.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.players.vimeo.js' => array('group' => JS_LIBRARY),
+        $path . '/src/minplayer.controller.js' => array('group' => JS_LIBRARY)
+      ),
+      'dependencies' => array(
+        array('system', 'ui.slider')
+      )
+    )
+  );
+}
+
+/**
+ * Returns all of the media player information.
+ */
+function html5_media_get_player_info() {
+
+  // Implement hook_html5_player_info
+  $cache = cache_get('html5_player_info');
+  if ($cache) {
+    return $cache->data;
+  }
+  else {
+    // Invoke all media_player_info and then set the cache.
+    $player_info = module_invoke_all('html5_player_info');
+    cache_set('html5_player_info', $player_info);
+    return $player_info;
+  }
+}
+
+/**
+ * Implements hook_media_player_info
+ */
+function html5_media_html5_player_info() {
+  $path = drupal_get_path('module', 'html5_media') . '/player/templates';
+  return array(
+    'plugins' => array(),
+    'templates' => array(
+      'default' => array(
+        'path' => $path . '/default',
+        'js' => array(
+          $path . '/default/js/minplayer.playLoader.default.js' => array('group' => JS_DEFAULT),
+          $path . '/default/js/minplayer.controller.default.js' => array('group' => JS_DEFAULT),
+          $path . '/default/js/minplayer.default.js' => array('group' => JS_DEFAULT)
+        ),
+        'css' => array(
+          $path . '/default/css/minplayer_default.css' => array('group' => CSS_DEFAULT)
+        )
+      ),
+      'jqueryui' => array(
+        'path' => $path . '/jqueryui',
+        'js' => array(
+          $path . '/jqueryui/js/minplayer.playLoader.jqueryui.js' => array('group' => JS_DEFAULT),
+          $path . '/jqueryui/js/minplayer.controller.jqueryui.js' => array('group' => JS_DEFAULT),
+          $path . '/jqueryui/js/minplayer.jqueryui.js' => array('group' => JS_DEFAULT)
+        ),
+        'css' => array(
+          $path . '/jqueryui/css/minplayer_jqueryui.css' => array('group' => CSS_DEFAULT)
+        )
+      )
+    )
+  );
+}
+
+/**
+ * Returns the player settings.
+ */
+function html5_media_player_settings() {
+  return array(
+    "id" => 'player',
+    "controller" => 'default',
+    "template" => 'default',
+    "swfplayer" => '',
+    "wmode" => 'transparent',
+    "preload" => true,
+    "autoplay" => false,
+    "loop" => false,
+    "width" => '100%',
+    "height" => '400px',
+    "debug" => false,
+    "volume" => 80,
+    "files" => array(),
+    "file" => '',
+    "preview" => '',
+    "attributes" => array()
+  );
+}
+
+/**
+ * Register a new media player in JavaScript.
+ */
+function html5_media_register_player($settings, $attributes) {
+  $playerId = $settings['id'];
+  html5_media_add_resources($settings['template'], $settings['debug']);
+  $attributes = drupal_json_encode($attributes);
+
+  // Only include the settings that the player cares about.
+  $settings = array_intersect_key($settings, html5_media_player_settings());
+  $settings = trim(drupal_json_encode($settings), '{}');
+  $swfplayer = url(drupal_get_path('module', 'html5_media') . '/player/flash/minplayer.swf');
+  drupal_add_js("
+    jQuery(function() {
+      jQuery('#{$playerId}').minplayer({
+        id:'#{$playerId}',
+        attributes:{$attributes},
+        {$settings},
+        swfplayer:'{$swfplayer}'
+      });
+    });
+  ", 'inline');
+}
+
+/**
+ * Theme a media player.
+ */
+function theme_html5_player($variables) {
+
+  // Get the element for this player.
+  if (isset($variables['element'])) {
+    $element = &$variables['element'];
+  }
+  else {
+    $element &$variables;
+  }
+
+  // Get the settings.
+  $settings = $element['#settings'];
+  $attributes = $element['#attributes'];
+
+  // Check to make sure there are sources.
+  if (empty($element['#sources'])) {
+    return 'No media sources provided';
+  }
+
+  // Set the value.
+  $element['#value'] = '';
+
+  // Iterate through each of the sources and create a source for that file.
+  foreach ($element['#sources'] as $delta => $file) {
+
+    // Ensure it is an object.
+    $file = (object)$file;
+
+    // Gets the source of this media.
+    if ($source = html5_media_get_source($file)) {
+
+      // Add the sources to the #value of the media tag.
+      $element['#value'] .= theme('html_tag', array(
+        'element' => array(
+          '#tag' => 'source',
+          '#attributes' => array('src' => $source)
+        )
+      ));
+    }
+  }
+
+  // Add some variables that the template needs.
+  $variables['player'] = theme('html_tag', $variables);
+  $variables['settings'] = $settings;
+  $variables['params'] = $settings;
+
+  // Register the media player in JavaScript.
+  html5_media_register_player($settings, $attributes);
+
+  // Return the theme for our media player.
+  return theme('html5_player_' . $settings['template'], $variables);
+}
+
+
+/**
+ * Returns the media source provided a field.
+ *
+ * @param object A Drupal file object.
+ */
+function html5_media_get_source($file) {
+  if ($file) {
+    if (isset($file->uri)) {
+      return file_create_url($file->uri);
+    }
+    else if (!empty($file->value)) {
+      return $file->value;
+    }
+  }
+  return '';
+}
+
+/**
+ * Returns the extension provided a file object.
+ *
+ * @param object A Drupal file object.
+ * @return string The file extension.
+ */
+function html5_media_get_extension($file) {
+
+  // Get the file source.
+  if ($source = html5_media_get_source($file)) {
+    return drupal_strtolower(drupal_substr($source, strrpos($source, '.') + 1));
+  }
+
+  return '';
+}
+
+/**
+ * Return the media type provided a Drupal file object.
+ *
+ * @param object A Drupal file object.
+ * @return string 'video', 'audio', or '' if none.
+ */
+function html5_media_get_media_type($file) {
+
+  // First try the filemime.
+  if (isset($file->filemime)) {
+    if (strpos($file->filemime, 'video/') === 0) {
+      return 'video';
+    }
+    if (strpos($file->filemime, 'audio/') === 0) {
+      return 'audio';
+    }
+  }
+
+  // Next try the extension.
+  if ($ext = html5_media_get_extension($file)) {
+
+    // Determine if the extension is a "video" type.
+    if (in_array($ext, array('swf', 'mov', 'mp4', 'm4v', 'flv', 'f4v', 'ogg', 'ogv', '3g2', 'webm'))) {
+      return 'video';
+    }
+
+    // Determine if the extension is an "audio" type.
+    if (in_array($ext, array('mp3', 'oga', 'wav', 'aif', 'm4a', 'aac'))) {
+      return 'audio';
+    }
+  }
+
+  // Return video if value is set, nothing otherwise.
+  return !empty($file->value) ? 'video' : '';
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function html5_media_field_formatter_info() {
+  return array(
+    'html5_player' => array(
+      'label' => t('Media Player'),
+      'description' => t('Play this file within a Media Player.'),
+      'field types' => array('file', 'text'),
+      'settings' => array(
+        'template' => 'default',
+        'preload' => TRUE,
+        'autoplay' => FALSE,
+        'loop' => FALSE,
+        'width' => '100%',
+        'height' => '400px',
+        'volume' => 80,
+        'sources' => FALSE,
+        'debug' => FALSE
+      )
+    )
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form
+ */
+function html5_media_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $element = array();
+  if ($display['type'] == 'html5_player') {
+
+    // Get the player information and templates.
+    $info = html5_media_get_player_info();
+    $templates = array_keys($info['templates']);
+    $templates = array_combine($templates, $templates);
+
+    $element['template'] = array(
+      '#title' => t('Template'),
+      '#type' => 'select',
+      '#options' => $templates,
+      '#default_value' => $settings['template']
+    );
+
+    $element['preload'] = array(
+      '#title' => t('Preload'),
+      '#type' => 'checkbox',
+      '#default_value' => $settings['preload']
+    );
+
+    $element['autoplay'] = array(
+      '#title' => t('Autoplay'),
+      '#type' => 'checkbox',
+      '#default_value' => $settings['autoplay']
+    );
+
+    $element['loop'] = array(
+      '#title' => t('Loop'),
+      '#type' => 'checkbox',
+      '#default_value' => $settings['loop']
+    );
+
+    $element['width'] = array(
+      '#title' => t('Width'),
+      '#type' => 'textfield',
+      '#default_value' => $settings['width']
+    );
+
+    $element['height'] = array(
+      '#title' => t('Height'),
+      '#type' => 'textfield',
+      '#default_value' => $settings['height']
+    );
+
+    $element['volume'] = array(
+      '#title' => t('Initial Volume (0 - 100)'),
+      '#type' => 'textfield',
+      '#default_value' => $settings['volume']
+    );
+
+    $element['sources'] = array(
+      '#title' => t('Allow multiple sources'),
+      '#description' => t('Checking this will turn multiple instances of files into multiple sources within the media element.'),
+      '#type' => 'checkbox',
+      '#default_value' => $settings['sources']
+    );
+
+    $element['debug'] = array(
+      '#title' => t('Debug Mode'),
+      '#type' => 'checkbox',
+      '#default_value' => $settings['debug']
+    );
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary
+ */
+function html5_media_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $summary = '';
+  if ($display['type'] == 'html5_player') {
+    $header = array('Setting', 'Value');
+    $rows = array();
+    foreach ($settings as $name => $value) {
+      $rows[] = array($name, $value);
+    }
+    $summary = theme('table', array('header' => $header, 'rows' => $rows));
+  }
+  return $summary;
+}
+
+/**
+ * Returns the settings for this video or audio element.
+ */
+function html5_media_get_attributes($settings) {
+  $attributes = array();
+  $element_settings = array('preload', 'autoplay', 'loop');
+  foreach ($settings as $name => $value) {
+    if ($value && in_array($name, $element_settings)) {
+      $attributes[$name] = NULL;
+    }
+  }
+
+  // Set the ID, width and height.
+  $attributes['id'] = $settings['id'] . '-player';
+  $attributes['class'] = 'minplayer-' . $settings['template'] . '-media';
+  $attributes['width'] = '100%';
+  $attributes['height'] = '100%';
+  return $attributes;
+}
+
+/**
+ * Adds the media player resources to the view.
+ */
+function html5_media_add_resources($template, $debug) {
+  static $resources_added = FALSE, $template_added = array();
+
+  // Get the player information.
+  $info = html5_media_get_player_info();
+
+  if (!$resources_added) {
+
+    // Add the media player library.
+    drupal_add_library('html5_media', $debug ? 'html5_player_debug' : 'html5_player');
+
+    // Iterate through all the plugins...
+    foreach ($info['plugins'] as $plugin) {
+
+      // Include all of the css and js files.
+      if ($plugin['js']) {
+        foreach ($plugin['js'] as $file => $options) {
+          drupal_add_js($file, $options);
+        }
+      }
+      if ($plugin['css']) {
+        foreach ($plugin['css'] as $file => $options) {
+          drupal_add_css($file, $options);
+        }
+      }
+    }
+  }
+
+  // Get the templates...
+  $templates = $info['templates'];
+
+  // If this template exists, then...
+  if (!isset($template_added[$template]) && isset($templates[$template])) {
+
+    // Statically cache this so we won't add it again.
+    $template_added[$template] = TRUE;
+
+    // Store the template info.
+    $template = $templates[$template];
+
+    // Include all of the template files.
+    if ($template['js']) {
+      foreach ($template['js'] as $file => $options) {
+        drupal_add_js($file, $options);
+      }
+    }
+    if ($template['css']) {
+      foreach ($template['css'] as $file => $options) {
+        drupal_add_css($file, $options);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function html5_media_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  switch ($display['type']) {
+    case 'html5_player':
+      // Get the display settings.
+      $settings = $display['settings'];
+
+      // Get the ID for this media player.
+      $id = 'player-' . drupal_clean_css_identifier($field['field_name']);
+
+      // If they wish to show all sources within a single media element.
+      if ($settings['sources']) {
+
+        // Get the media tag.
+        $mediatag = '';
+        foreach ($items as $delta => $item) {
+          if ($mediatag = html5_media_get_media_type((object)$item)) {
+            break;
+          }
+        }
+
+        // If the mediatag exists, then theme the player.
+        if ($mediatag) {
+          $settings['id'] = $id;
+          $element[$delta] = array(
+            '#theme' => 'html5_player',
+            '#tag' => $mediatag,
+            '#attributes' => html5_media_get_attributes($settings),
+            '#settings' => $settings,
+            '#sources' => $items
+          );
+        }
+      }
+      else {
+
+        // Iterate through all the items.
+        foreach ($items as $delta => $item) {
+
+          // Get the media tag.
+          if ($mediatag = html5_media_get_media_type((object)$item)) {
+            $settings['id'] = $id . '-' . $delta;
+            $element[$delta] = array(
+              '#theme' => 'html5_player',
+              '#tag' => $mediatag,
+              '#attributes' => html5_media_get_attributes($settings),
+              '#settings' => $settings,
+              '#sources' => array($item)
+            );
+          }
+        }
+      }
+      break;
+  }
+
+  return $element;
+}

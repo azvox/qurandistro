@@ -1,0 +1,14 @@
+; $Id: profiler_builder_extras
+name = "Profiler Builder Extras"
+description = "Extra tools for use with profiler builder, more experimental."
+package = "Development"
+core = "7.x"
+configure = admin/config/development/profiler_builder/extras
+dependencies[] = "profiler_builder"
+
+; Information added by Drupal.org packaging script on 2014-11-11
+version = "7.x-1.2+4-dev"
+core = "7.x"
+project = "profiler_builder"
+datestamp = "1415730482"
+

@@ -1,0 +1,875 @@
+<?php
+define('MEDIAFRONT_DEFAULT_WIDTH', 500);
+define('MEDIAFRONT_DEFAULT_HEIGHT', 350);
+
+// Require the filefield support file.
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'mediafront') . '/includes/mediafront.field.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'mediafront') . '/includes/mediafront.preset.inc';
+
+/**
+ * Implements hook_permission().
+ */
+function mediafront_permission() {
+  $perms = array(
+    'administer mediafront' => array(
+      'title' => t('Administer MediaFront'),
+      'description' => t('Perform administration tasks for the MediaFront module.'),
+    )
+  );
+
+  return array_merge( $perms, mediafront_preset_permission());
+}
+
+/**
+ * Implements hook_menu().
+ */
+function mediafront_menu() {
+
+  $items = array();
+
+  // Gets a JSON playlist for any view.
+  // This menu routes to a page that uses views -> we make sure views is enabled
+  if (module_exists('views')) {
+    $items['mediafront_getplaylist'] = array(
+      'page callback' => 'mediafront_get_playlist_json',
+      'type' => MENU_CALLBACK,
+      'page arguments' => array(1, 2, 3),
+      'access arguments' => array('access content')
+    );
+  }
+
+  $items = array_merge($items, mediafront_preset_menu());
+
+  return $items;
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function mediafront_modules_enabled($modules) {
+  // If views enabled, set menu as needed to be rebuilt
+  // The availability of certain menu items depends on views being enabled or not
+  if (in_array('views', $modules)) {
+    variable_set('menu_rebuild_needed', TRUE);
+  }
+}
+
+/**
+ * Implements hook_modules_disabled().
+ */
+function mediafront_modules_disabled($modules) {
+  // If views disabled, set menu as needed to be rebuilt
+  // The availability of certain menu items depends on views being enabled or not
+  if (in_array('views', $modules)) {
+    variable_set('menu_rebuild_needed', TRUE);
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function mediafront_theme() {
+  $theme = array();
+  $theme['mediafront_player'] = array(
+    'render element' => 'element',
+    'arguments' => array('element' => NULL)
+  );
+  return $theme;
+}
+
+/**
+ * Implement the theme for the media player.
+ */
+function theme_mediafront_player($variables) {
+
+  // Get the correct variables.
+  $variables = !empty($variables['element']) ? array_shift($variables) : $variables;
+
+  // Get the entity and preset.
+  $entity = $variables['#entity'];
+
+  // If no fields are provided then return nothing...
+  if (empty($variables['#fields'])) {
+    return '';
+  }
+
+  // Add the node to the media player.
+  $params = array('node' => mediafront_get_node('node', $entity, $variables['#fields']));
+
+  // Nodes will never need the playlist.
+  $params['disablePlaylist'] = true;
+
+  // Add the variables to the params in case we need it in other hooks.
+  $params['variables'] = $variables;
+
+  // Return the player.
+  return mediafront_get_player($variables['#preset'], $params);
+}
+
+/**
+ * Implementation of hook_features_api()
+ *
+ */
+function mediafront_features_api() {
+  return array(
+    'mediafront' => array(
+      'name' => t('MediaFront Presets'),
+      'default_hook' => 'mediafront_default_presets',
+      'file' => drupal_get_path('module', 'mediafront') .'/includes/mediafront.features.inc',
+    ),
+    'mediafront_views' => array(
+      'name' => t('MediaFront Views Options'),
+      'default_hook' => 'mediafront_views_default_options',
+      'file' => drupal_get_path('module', 'mediafront') .'/includes/mediafront.features.inc',
+    )
+  );
+}
+
+/**
+ * Implements hook_views_api().
+ *
+ * This one is used as the base to reduce errors when updating.
+ */
+function mediafront_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'mediafront') .'/views',
+  );
+}
+
+/**
+ * Returns the default views options.
+ *
+ * @return <type>
+ */
+function mediafront_views_default_options() {
+  $default_options = &drupal_static(__FUNCTION__);
+  if ($default_options) {
+    return $default_options;
+  }
+  else {
+    $default_options = module_invoke_all('mediafront_views_default_options');
+    drupal_alter('mediafront_views_default_options', $default_options);
+    return $default_options;
+  }
+}
+
+/**
+ * Returns the options to be used within views.
+ *
+ * @param type $handler
+ */
+function mediafront_views_get_options($handler = NULL) {
+
+  // Get the variable first...
+  $options = variable_get('mediafront_views_options', array());
+
+  // Iterate through the defaults and see if there are any settings not provided.
+  foreach (mediafront_views_default_options() as $view => $fields_options) {
+    if (!isset($options[$view])) {
+      $options[$view] = $fields_options;
+    }
+    else {
+
+      // Now iterate through the fields and see if a field setting isn't provided.
+      foreach ($fields_options as $field_name => $field_options) {
+        if (!isset($options[$view][$field_name])) {
+          $options[$view][$field_name] = $field_options;
+        }
+      }
+    }
+  }
+
+  // If there are no options, then just return them.
+  if (!$handler || empty($handler->options['mediafront'])) {
+    return $options;
+  }
+  else if ($options && !empty($options[$handler->view->name][$handler->field])) {
+    return $options[$handler->view->name][$handler->field];
+  }
+  else {
+    return $handler->options['mediafront'];
+  }
+}
+
+/**
+ * Sets the options for the views handler.
+ */
+function mediafront_views_set_options(&$handler, $options) {
+  // Store these settings in the field handler options.
+  $handler->options['mediafront'] = $options;
+
+  // Set these settings in a variable so they can be exported.
+  $settings = mediafront_views_get_options();
+  $settings[$handler->view->name][$handler->field] = $options;
+  variable_set('mediafront_views_options', $settings);
+}
+
+/**
+ * Returns a list of all available players.
+ */
+function mediafront_get_players() {
+  $return = array();
+  foreach (module_implements('player_info') as $name) {
+    $function = $name .'_player_info';
+    $return = array_merge($return, $function());
+  }
+  return $return;
+}
+
+/**
+ * Returns the player's default parameters.
+ * @param $player
+ */
+function mediafront_get_player_params( $player ) {
+  $settings = array();
+  $get_params = $player . '_get_player_params';
+  if (function_exists($get_params)) {
+    $settings = $get_params();
+  }
+  drupal_alter('mediafront_player_params', $settings);
+  return $settings;
+}
+
+/**
+ * Returns the player's default settings.
+ * @param $player
+ */
+function mediafront_get_player_settings( $player ) {
+  $settings = array();
+  $get_settings = $player . '_get_player_settings';
+  if (function_exists($get_settings)) {
+    $settings = $get_settings();
+  }
+  drupal_alter('mediafront_player_settings', $settings);
+  return $settings;
+}
+
+/**
+ * Returns ALL the player settings for the given player provided settings to override.
+ */
+function mediafront_get_settings($player, $overrides = array()) {
+  $settings = array_merge(mediafront_get_player_params($player), mediafront_get_player_settings($player));
+  return $overrides ? array_merge($settings, $overrides) : $settings;
+}
+
+/**
+ * Gets a playlist in JSON format.
+ */
+function mediafront_get_playlist_json($playlist = null, $limit = null, $start = null) {
+
+  // Get the playlist.
+  $playlist = $playlist ? check_plain($playlist) : '';
+  $playlist = !empty($_GET['playlist']) ? check_plain($_GET['playlist']) : $playlist;
+
+  // Get the limit.
+  $limit = $limit ? check_plain($limit) : 10;
+  $limit = !empty($_GET['max-results']) ? check_plain($_GET['max-results']) : $limit;
+
+  // Get the start index.
+  $start = $start ? check_plain($start) : 0;
+  $start = !empty($_GET['start-index']) ? check_plain($_GET['start-index']) : $start;
+
+  // Output the playlist as JSON.
+  drupal_json_output(mediafront_get_playlist($playlist, $limit, $start));
+}
+
+/**
+ * Gets a playlist
+ */
+function mediafront_get_playlist($playlist, $limit = 10, $start = 0) {
+  // Get the views object.
+  $view = views_get_view($playlist);
+  if (empty($view)) {
+    return array('error' => 'Playlist not found.');
+  }
+
+  // Check access
+  if (!$view->access('default')) {
+    return array('error' => 'Access Denied.');
+  }
+
+  // Setup our view for query.
+  if (method_exists($view, 'set_use_pager')) {
+    $view->set_use_pager(FALSE);
+  }
+  else {
+    $view->display_handler->set_option('pager', array(
+      'type' => 'some',
+      'options' => $view->display_handler->options['pager']['options'],
+    ));
+  }
+
+  $view->set_items_per_page($limit);
+  $view->set_offset($start);
+  $view->get_total_rows = TRUE;
+  $view->execute();
+
+  // Return our playlist...
+  return mediafront_get_playlist_from_view($view, $limit, $start);
+}
+
+/**
+ * Returns a playlist provided a view.
+ */
+function mediafront_get_playlist_from_view($view, $limit = 10, $start = 0) {
+
+  // Create our playlist array.
+  $playlist = array();
+  $playlist['nodes'] = array();
+  $playlist['name'] = $view->name;
+
+  // Get the endpoint for this view.
+  $endpoint = 'mediafront_getplaylist/' . $view->name;
+  $playlist['endpoint'] = url($endpoint, array('absolute' => TRUE));
+
+  // Get the total items.
+  $total = !empty($view->total_rows) ? $view->total_rows : (isset($view->query->pager) ? $view->query->pager->get_total_items() : 0);
+  $total = empty($total) ? count($view->result) : $total;
+  $total += $start;
+  $playlist['total_rows'] = $total;
+
+  // Iterate through each field and add the configuration.
+  $fields = array();
+  foreach ($view->field as $name => $field) {
+    $options = mediafront_views_get_options($field);
+    if (!empty($options['field_type'])) {
+      $fields[$field->field] = array(
+        'type' => $options['field_type'],
+        'field' => $field,
+        'options' => $options
+      );
+    }
+  }
+
+  // Only continue if there are fields.
+  if ($fields) {
+
+    // Iterate through all the results.
+    foreach ($view->result as $row) {
+
+      // Add this as a playlist node.
+      if ($node = mediafront_get_node('view', $row, $fields)) {
+
+        // Add the node ID.
+        if (!empty($row->nid)) {
+          $node['nid'] = $row->nid;
+        }
+
+        // Add this node.
+        $playlist['nodes'][] = $node;
+      }
+    }
+  }
+
+  // Return the playlist.
+  return $playlist;
+}
+
+/**
+ * Define the preset form selection.
+ */
+function mediafront_preset_select_form($default, $key = 'mediafront_preset') {
+  $presets = mediafront_preset_get_presets();
+  $options = array();
+  foreach( $presets as $preset ) {
+    $options[$preset['name']] = $preset['name'];
+  }
+  return array(
+    '#type' => 'select',
+    '#title' => t('MediaFront Presets'),
+    '#options' => $options,
+    '#default_value' => isset($default[$key]) ? $default[$key] : '',
+  );
+}
+
+/**
+ * Returns the mediafront field form.
+ */
+function mediafront_field_form($options, $id_prefix = '') {
+
+  // Include CTools dependent
+  ctools_include('dependent');
+
+  // Get the field types.
+  $field_types = array(
+    0 => 'None',
+    'title' => 'Title',
+    'media' => 'Media',
+    'image' => 'Image',
+    'stream' => 'Stream',
+    'custom' => 'Custom'
+  );
+
+  // Get the field type for this field to map to mediafront.
+  $type = !empty($options['field_type']) ? $options['field_type'] : 0;
+  $form['field_type'] = array(
+    '#type' => 'select',
+    '#title' => 'Field Type',
+    '#description' => t('Select the way this field should be handled by a MediaFront player.'),
+    '#options' => $field_types,
+    '#default_value' => $type
+  );
+
+  // Select the media type for the media.
+  $media_type = !empty($options['media_type']) ? $options['media_type'] : 'media';
+  $form['media_type'] = mediafront_media_field_form($media_type);
+  $form['media_type']['#process'] = array('ctools_dependent_process');
+  $form['media_type']['#dependency'] = array($id_prefix . 'field-type' => array('media'));
+
+  // Add the preview image form.
+  $preview = !empty($options['preview']) ? $options['preview'] : 0;
+  $thumb = !empty($options['thumbnail']) ? $options['thumbnail'] : 0;
+  $form = array_merge($form, mediafront_preview_field_form($preview, $thumb));
+
+  // Add the CTools dependency on the preview and thumbnail selections.
+  $form['preview']['#process'] = array('ctools_dependent_process');
+  $form['preview']['#dependency'] = array($id_prefix . 'field-type' => array('image'));
+  $form['thumbnail']['#process'] = array('ctools_dependent_process');
+  $form['thumbnail']['#dependency'] = array($id_prefix . 'field-type' => array('image'));
+
+  // Add the custom data form.
+  $custom = !empty($options['custom']) ? $options['custom'] : "";
+  $form['custom'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Field Name',
+    '#description' => 'Enter the machine name for the field you would like to bring into the media player.',
+    '#default_value' => $custom,
+    '#process' => array('ctools_dependent_process'),
+    '#dependency' => array($id_prefix . 'field-type' => array('custom'))
+  );
+
+  // Return the form.
+  return $form;
+}
+
+/**
+ * Returns the media field form.
+ *
+ * @param type $default
+ * @return type
+ */
+function mediafront_media_field_form($default = 'media') {
+
+  // Add our description for the media.
+  $description = t('Select how you would like to use this file field for MediaFront.');
+  $description .= '<br/>';
+  $description .= '<ul>';
+  $description .= '<li><strong>' . t('Introduction') . '</strong>: ' . t('This selection will make this file field be used as an introduction, before the commercial') . '</li>';
+  $description .= '<li><strong>' . t('Commercial') . '</strong>: ' . t('To use this file field as the commercial for this media type') . '</li>';
+  $description .= '<li><strong>' . t('Pre-Reel') . '</strong>: ' . t('The pre-reel is shown right before the main media content, but after the commercial.') . '</li>';
+  $description .= '<li><strong>' . t('Media Content') . '</strong>: ' . t('The media content is the main media piece to be played to the user.') . '</li>';
+  $description .= '<li><strong>' . t('Post-Reel') . '</strong>: ' . t('The post-reel is shown right after the main media content.') . '</li>';
+  $description .= '</ul>';
+
+  // Select the media type for the media.
+  return array(
+    '#type' => 'select',
+    '#title' => t('Media Type'),
+    '#description' => $description,
+    '#default_value' => $default,
+    '#options' => array(
+      0 => t('None'),
+      'intro' => t('Introduction'),
+      'commercial' => t('Commercial'),
+      'prereel' => t('Pre-Reel'),
+      'media' => t('Media Content'),
+      'postreel' => t('Post-Reel')
+    ),
+  );
+}
+
+/**
+ * Returns the preview image field form.
+ */
+function mediafront_preview_field_form($preview_default = 'mediafront_original', $thumb_default = 'mediafront_original') {
+  $form = array();
+
+  // Get all of the image styles.
+  $styles = image_styles();
+  $options = array();
+  $options[0] = t('None');
+  $options['mediafront_original'] = t('Original Image');
+  foreach( $styles as $name => $style ) {
+    $options[$name] = $style['name'];
+  }
+
+  // Add the preview style selection.
+  $form['preview'] = array(
+    '#type' => 'select',
+    '#title' => t('Preview Style'),
+    '#description' => t('Select the Image Style to be used when this field is loaded as a preview in a MediaFront player.'),
+    '#options' => $options,
+    '#default_value' => $preview_default,
+  );
+
+  // Add the thumbnail style selection.
+  $form['thumbnail'] = array(
+    '#type' => 'select',
+    '#title' => t('Playlist Style'),
+    '#description' => t('Select the Image Style to be used when this field is used as a thumbnail in a MediaFront playlist.'),
+    '#options' => $options,
+    '#default_value' => $thumb_default,
+  );
+
+  return $form;
+}
+
+/**
+ * Returns the image path for a media object using the Media module.
+ *
+ * @return array
+ */
+function mediafront_get_media_preview($media) {
+
+  // Make sure this is a valid media file.
+  if (($media->class == 'media') &&
+       module_exists('media') &&
+       !empty($media->file) &&
+       !empty($media->file->type)) {
+
+    // Get the preview thumbnail image.
+    $preview = media_get_thumbnail_preview($media->file);
+    if ($preview) {
+      $preview['#file'] = (object)$preview['#file'];
+      $markup = drupal_render($preview);
+      $matches = array();
+      preg_match('/img.*src\=\"(.*)\"/U', $markup, $matches);
+      if (!empty($matches[1])) {
+        $preview = new MediaFile($matches[1]);
+        if ($preview->class == 'image') {
+          return $preview;
+        }
+      }
+    }
+  }
+  return '';
+}
+
+/**
+ * Provided a node field, this returns the values.
+ *
+ * @param type $value
+ * @return type
+ */
+function mediafront_get_node_field_instance_value($value) {
+  // If this is a text value.
+  if (!empty($value['value'])) {
+    return $value['value'];
+  }
+
+  // If this is a file.
+  else if (!empty($value['fid'])) {
+    if (!empty($value['data'])) {
+      return $value['data'];
+    }
+    else if (!empty($value['filename'])) {
+      return $value;
+    }
+    else {
+      return file_load($value['fid']);
+    }
+  }
+  else {
+    return $value;
+  }
+}
+
+/**
+ * Returns the field values for a node entity.
+ */
+function mediafront_get_node_field_value($entity, $field) {
+  $values = array();
+
+  // Get the field name.
+  $field_name = $field['field'];
+
+  // Check for a valid field
+  if (isset($entity->{$field_name})) {
+
+    // Get the type of this field.
+    $type = gettype($entity->{$field_name});
+
+    // If it isn't an object or an array, then just return the value.
+    if ($type != 'array') {
+      $values[] = $entity->{$field_name};
+    }
+
+    // Otherwise, we can assume it is a field.
+    elseif ($items = field_get_items('node', $entity, $field_name)) {
+      foreach ($items as $item) {
+        if ($value = mediafront_get_node_field_instance_value($item)) {
+          $values[] = $value;
+        }
+      }
+    }
+  }
+
+  return $values;
+}
+
+/**
+ * Returns the field values for a view entry.
+ */
+function mediafront_get_view_field_value($row, $field) {
+  $value = $field['field']->get_value($row);
+  if (!$value) {
+    $field_name = $field['field']->handler_type . '_' . $field['field']->field;
+    $offset = $field['field']->options['delta_offset'];
+    $value = !empty($row->{$field_name}[$offset]['raw']) ? $row->{$field_name}[$offset]['raw'] : array();
+  }
+  $values = (!$value || (is_array($value) && !empty($value[0]))) ? $value : array($value);
+  foreach ($values as $key => $value) {
+    if (is_array($value)) {
+      $values[$key] = mediafront_get_node_field_instance_value($value);
+    }
+  }
+  return $values;
+}
+
+/**
+ * Returns the field values for a media.
+ */
+function mediafront_get_field_value($type, $entity, $field) {
+  $func = 'mediafront_get_' . $type . '_field_value';
+  return $func($entity, $field);
+}
+
+/**
+ * Provided a type, entity, and fields; this creaets a player node.
+ *
+ * @param string $type The type of object we are dealing with.
+ * @param object $entity The entity to search.
+ * @param array $fields An array of fields to include in the player.
+ */
+function mediafront_get_node($type, $entity, $fields) {
+
+  // Create our node object.
+  $node = array();
+
+  // Only iterate over fields if they are an array.
+  if (is_array($fields)) {
+
+    // Iterate through all of our fields.
+    $stream = '';
+    foreach ($fields as $field) {
+
+      // Get the options.
+      $options = $field['options'];
+
+      // Get the values for this field.
+      $values = mediafront_get_field_value($type, $entity, $field);
+      if (!empty($values)) {
+
+        // If this is a media field.
+        if ($field['type'] == 'media') {
+          foreach ($values as $value) {
+            $node['mediafiles']['media'][$options['media_type']][] = new MediaFile($value);
+          }
+        }
+
+        // If this is an image field.
+        else if ($field['type'] == 'image') {
+
+          // Iterate through the thumbnail and previews.
+          foreach (array('thumbnail', 'preview') as $image_type) {
+
+            // If we just want the original image...
+            if ($options[$image_type] == 'mediafront_original') {
+              $file = new MediaFile($values[0]);
+              $node['mediafiles']['image']['image'] = $file;
+            }
+            else if (!empty($options[$image_type])) {
+              $file = new MediaFile($values[0]);
+              $file->path = image_style_url($options[$image_type], $file->file->uri);
+              $node["mediafiles"]['image'][$image_type] = $file;
+            }
+          }
+        }
+
+        // If this is the title field.
+        else if ($field['type'] == 'title') {
+          $node['title'] = is_array($values[0]) ? $values[0]['safe_value'] : $values[0];
+        }
+
+        // If this is a custom field.
+        else if ($field['type'] == 'custom') {
+
+          // Add this field to the node values.
+          $node[$options['custom']] = is_array($values[0]) ? $values[0]['safe_value'] : $values[0];
+        }
+        else if ($field['type'] == 'stream') {
+          $stream = $values[0];
+        }
+        else {
+
+          // All other fields are added directly to the node.
+          $node[$field['field']] = is_array($values[0]) ? $values[0]['safe_value'] : $values[0];
+        }
+      }
+    }
+
+    // If a stream was provided, then set it to the media file.
+    if ($stream && !empty($node['mediafiles']['media']['media'][0])) {
+      $node['mediafiles']['media']['media'][0]->stream = $stream;
+    }
+
+    // Always include the node title.
+    if ($type == 'node' && !empty($entity->title)) {
+      $node['title'] = $entity->title;
+    }
+
+    // If we have media, but not preview, see if the media module can help us out...
+    if (!empty($node['mediafiles']['media']) && empty($node['mediafiles']['image'])) {
+      if ($image = mediafront_get_media_preview($node['mediafiles']['media']['media'][0])) {
+        $node['mediafiles']['image']['image'] = $image;
+      }
+    }
+  }
+
+  // Make sure this entity is a file field.
+  else if (!empty($entity->fid)) {
+
+    // If this a media entity, then we need to handle that as well.
+    $node['mediafiles']['media']['media'] = new MediaFile($entity);
+    $node['title'] = $entity->filename;
+  }
+
+  // Allow other modules the opportunity to alter the node.
+  drupal_alter('mediafront_node', $entity, $fields, $node, $type);
+
+  // Return the node object.
+  return $node;
+}
+
+/**
+ * Implementation of hook_token_info
+ *
+ * @return type
+ */
+function mediafront_token_info() {
+  $type = array(
+    'name' => t('MediaFront'),
+    'description' => t('Adds mediafront players using tokens.'),
+  );
+
+  // Get the mediafront presets.
+  $presets = mediafront_preset_get_presets();
+
+  // If there are presets, then define some tokens.
+  if ($presets) {
+    foreach ($presets as $preset) {
+      $mediafront[$preset['name']] = array(
+        'name' => 'MediaFront ' . $preset['name'] . ' preset',
+        'description' => $preset['description'],
+      );
+    }
+
+    // Return an array of tokens allowed by this module.
+    return array(
+      'types' => array('mediafront' => $type),
+      'tokens' => array('mediafront' => $mediafront),
+    );
+  }
+
+  // Return nothing.
+  return array();
+}
+
+/**
+ * Implements hook_tokens
+ */
+function mediafront_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $players = &drupal_static(__FUNCTION__);
+  $replacements = array();
+  if ($type == 'mediafront') {
+    foreach ($tokens as $name => $original) {
+      if (!isset($players[$name])) {
+        $players[$name] = mediafront_get_player($name);
+      }
+
+      $replacements[$original] = $players[$name];
+    }
+  }
+  return $replacements;
+}
+
+/**
+ * Provided the preset and an additional array of params, this returns the player params.
+ *
+ * @param type $preset
+ * @param type $params
+ * @return string
+ */
+function mediafront_get_preset_params($preset, $params = array()) {
+  $players = &drupal_static(__FUNCTION__);
+  $preset = mediafront_get_preset($preset, (is_array($params) && !empty($params['admin'])));
+  $params = !empty($params) ? !empty($preset['settings']) ? array_merge($preset['settings'], $params) : $params : $preset['settings'];
+  $params['preset'] = $preset['name'];
+  $params['player'] = $preset['player'];
+  $params['protocol'] = 'json';
+  $params['connect'] = !empty($params['connect']) ? $params['connect'] : (!empty($preset['connect']) ? $preset['connect'] : array());
+  if (empty($params['id'])) {
+    $params['id'] = 'mediafront_' . $preset['name'];
+
+    // Find a unique id for this player.
+    $i = 1;
+    $id = $params['id'];
+    while (isset($players[$id])) {
+      $id = $params['id'] . '_' . $i++;
+    }
+
+    // Set the id.
+    $params['id'] = $id;
+  }
+
+  // Add to the players array.
+  $players[$params['id']] = $params['id'];
+  return $params;
+}
+
+/**
+ * Returns a media player.
+ *
+ * @param - This can either be an associative array with the settings,
+ *          or can be the preset string followed by another argument that
+ *          is the associative array with the settings you wish to override for
+ *          that preset.
+ *
+ * Example: To show the player with settings...
+ *
+ *          $params['playlist'] = 'videos';
+ *          print mediafront_get_player( $params );
+ *
+ * Example: To show the player with the 'mypreset' preset.
+ *
+ *          print mediafront_get_player( 'mypreset' );
+ *
+ * Example: To show the player with the 'mypreset' with the settings overrides.
+ *
+ *          $params['playlist'] = 'videos';
+ *          print mediafront_get_player( 'mypreset', $params );
+ *
+ */
+function mediafront_get_player() {
+  $args = func_get_args();
+  $params = $args[0];
+
+  // If they pass in a string, then this is a preset.
+  if (gettype($params) == 'string') {
+    $preset = $params;
+    $params = !empty($args[1]) ? $args[1] : array();
+    $params = mediafront_get_preset_params($preset, $params);
+  }
+
+  if ($params && is_array($params)) {
+    $params = mediafront_get_settings($params['player'], $params);
+    $player = ($params && $params['player']) ? $params['player'] : 'osmplayer';
+    $getPlayer = $player . '_get_player';
+    return function_exists($getPlayer) ? $getPlayer($params) : t('Player not available');
+  }
+  else {
+    return t('Player not available');
+  }
+}
+?>

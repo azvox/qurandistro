@@ -1,0 +1,72 @@
+<?php
+
+/**
+ * Implements hook_mediafront_field_types_alter().
+ *
+ * Adds support for the kaltura entryid field type.
+ */
+function mediafront_kaltura_mediafront_field_types_alter(&$types) {
+  $types[] = 'field_kaltura_entryid';
+}
+
+function mediafront_kaltura_mediafront_player_settings_alter(&$settings) {
+  $settings['kaltura_player'] = '';
+}
+
+/**
+ * Alter the preset form and add our settings there.
+ * @param type $form
+ * @param type $form_state
+ */
+function mediafront_kaltura_form_mediafront_preset_form_alter(&$form, &$form_state) {
+  // Add Kaltura settings to the form.
+  $preset = $form['#preset'];
+  $player_settings = &$form['settings']['player_settings_wrapper']['player_settings'];
+  $player_settings['kaltura'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Kaltura Settings'),
+    '#group' => 'player_settings'
+  );
+  $player_settings['kaltura']['kaltura_player'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Kaltura Chromeless Player ID',
+    '#description' => t('The Kaltura chromeless media player to use.  You should create one by following <a href="http://knowledge.kaltura.com/faq/how-create-chromeless-player">this tutorial</a>.'),
+    '#default_value' => $preset['settings']['kaltura_player']
+  );
+}
+
+/**
+ * Alter the libraries and add the kaltura player to it.
+ *
+ * @param type $libraries
+ * @param type $module
+ */
+function mediafront_kaltura_library_alter(&$libraries, $module) {
+  if (!empty($libraries['minplayer_debug'])) {
+    $path = drupal_get_path('module', 'osmplayer') . '/player';
+    $libraries['minplayer_debug']['js'][$path . '/minplayer/src/minplayer.players.kaltura.js'] = array('group' => JS_LIBRARY);
+  }
+}
+
+/**
+ * Alter the node to include the kaltura media link.
+ *
+ * @param type $entity
+ * @param type $fields
+ * @param type $node
+ */
+function mediafront_kaltura_osmplayer_params_alter($settings, &$player_params) {
+  if (!empty($player_params['node']['mediafiles']['media'])) {
+    foreach ($player_params['node']['mediafiles']['media'] as &$media) {
+      foreach ($media as &$media_type) {
+        if (!empty($media_type->file->entryid) && !empty($media_type->file->mediatype)) {
+          $file = 'http://www.kaltura.com/kwidget';
+          $file .= '/wid/_' . variable_get('kaltura_partner_id', '');
+          $file .= '/uiconf_id/' . $settings['kaltura_player'];
+          $file .= '/entry_id/' . $media_type->file->entryid;
+          $media_type = new MediaFile($file);
+        }
+      }
+    }
+  }
+}

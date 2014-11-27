@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the quran_importer feature.
+ */
+
+include_once 'quran_importer.features.inc';

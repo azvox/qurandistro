@@ -1,0 +1,21 @@
+name = Timeline Bookmarks
+description = This enables timeline bookmarking where users can bookmark their place within a media content.
+core = 7.x
+package = MediaFront
+php = 5.2.4
+dependencies[] = mediafront
+dependencies[] = osmplayer
+dependencies[] = views
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:1
+features[views_view][] = user_timeline_bookmarks
+files[] = timeline_bookmark.inc
+files[] = views/timeline_bookmark_field_link.inc
+files[] = views/timeline_bookmark_field_delete.inc
+
+; Information added by drupal.org packaging script on 2013-09-13
+version = "7.x-2.2"
+core = "7.x"
+project = "mediafront"
+datestamp = "1379103236"
+
