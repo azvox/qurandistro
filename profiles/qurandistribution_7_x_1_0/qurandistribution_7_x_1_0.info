@@ -1,6 +1,6 @@
-; Packaging information for the_holy_quran_distribution
-name = "The holy Quran distribution"
-description = "The holy Quran-القرآن الكريم"
+; Packaging information for qurandistribution_7_x_1_0
+name = "qurandistribution-7.x-1.0"
+description = "The Holy Quran-القرآن الكريم"
 exclusive = "1"
 core = "7.x"
 ; ----------
@@ -67,6 +67,7 @@ dependencies[] = views_ui
 ; Features
 dependencies[] = features
 dependencies[] = feeds_import
+dependencies[] = quran_importer
 
 ; ----------
 ; Variables
@@ -75,29 +76,13 @@ variables[additional_settings__active_tab_quran] = 'edit-menu'
 variables[admin_theme] = 'seven'
 variables[ant_pattern_quran] = 'Ayah-[random:number]'
 variables[ant_quran] = '2'
-variables[bootstrap_library_settings][bootstrap][bootstrap_library_settings__bootstrap__active_tab] = ''
-variables[bootstrap_library_settings][minimized][options] = '0'
-variables[bootstrap_library_settings][visibility][visibility] = '0'
+variables[bootstrap_library_settings][visibility][visibility] = 0
 variables[bootstrap_library_settings][visibility][pages] = 'admin/*'
-variables[bootstrap_library_settings][theme][visibility] = '1'
-variables[bootstrap_library_settings][theme][themes][bootstrap] = 'bootstrap'
+variables[bootstrap_library_settings][theme][visibility] = 1
+variables[bootstrap_library_settings][theme][themes][bartik] = 'bartik'
+variables[bootstrap_library_settings][minimized][options] = 1
 variables[bootstrap_library_settings][files][types][css] = 'css'
 variables[bootstrap_library_settings][files][types][js] = 'js'
-variables[dashboard_stashed_blocks][0][module] = 'node'
-variables[dashboard_stashed_blocks][0][delta] = 'recent'
-variables[dashboard_stashed_blocks][0][region] = 'dashboard_main'
-variables[dashboard_stashed_blocks][1][module] = 'user'
-variables[dashboard_stashed_blocks][1][delta] = 'new'
-variables[dashboard_stashed_blocks][1][region] = 'dashboard_sidebar'
-variables[dashboard_stashed_blocks][2][module] = 'search'
-variables[dashboard_stashed_blocks][2][delta] = 'form'
-variables[dashboard_stashed_blocks][2][region] = 'dashboard_sidebar'
-variables[dashboard_stashed_blocks][3][module] = 'comment'
-variables[dashboard_stashed_blocks][3][delta] = 'recent'
-variables[dashboard_stashed_blocks][3][region] = 'dashboard_inactive'
-variables[dashboard_stashed_blocks][4][module] = 'user'
-variables[dashboard_stashed_blocks][4][delta] = 'online'
-variables[dashboard_stashed_blocks][4][region] = 'dashboard_inactive'
 variables[date_default_timezone] = 'UTC'
 variables[default_nodes_main] = '10'
 variables[field_bundle_settings_node__quran][view_modes][teaser][custom_settings] = true
@@ -115,8 +100,7 @@ variables[field_bundle_settings_taxonomy_term__sura_name][extra_fields][display]
 variables[filter_fallback_format] = 'plain_text'
 variables[jquery_update_compression_type] = 'min'
 variables[jquery_update_jquery_cdn] = 'none'
-variables[jquery_update_jquery_version] = '1.9'
-variables[maintenance_mode_message] = 'Qurandefault is currently under maintenance. We should be back shortly. Thank you for your patience.'
+variables[jquery_update_jquery_version] = '1.7'
 variables[mediafront_views_options][Quran][mediafront_player][link_to_player] = 1
 variables[mediafront_views_options][Quran][mediafront_player][field_type] = 'media'
 variables[mediafront_views_options][Quran][mediafront_player][media_type] = 'media'
@@ -333,11 +317,6 @@ variables[mediafront_views_options][quran_english][field_chapter_number][media_t
 variables[mediafront_views_options][quran_english][field_chapter_number][preview] = '0'
 variables[mediafront_views_options][quran_english][field_chapter_number][thumbnail] = '0'
 variables[mediafront_views_options][quran_english][field_chapter_number][custom] = ''
-variables[menu_default_active_menus][0] = 'features'
-variables[menu_default_active_menus][1] = 'main-menu'
-variables[menu_default_active_menus][2] = 'management'
-variables[menu_default_active_menus][3] = 'navigation'
-variables[menu_default_active_menus][5] = 'user-menu'
 variables[menu_options_quran][0] = 'main-menu'
 variables[menu_parent_quran] = 'main-menu:0'
 variables[node_admin_theme] = '1'
@@ -346,19 +325,14 @@ variables[node_options_quran][0] = 'status'
 variables[node_preview_quran] = '0'
 variables[pathauto_blog_pattern] = 'blogs/[user:name]'
 variables[pathauto_forum_pattern] = '[term:vocabulary]/[term:name]'
-variables[pathauto_node_pattern] = 'quran/[node:title]'
+variables[pathauto_node_pattern] = 'content/[node:title]'
 variables[pathauto_punctuation_hyphen] = 1
 variables[pathauto_taxonomy_term_pattern] = '[term:vocabulary]/[term:name]'
 variables[pathauto_user_pattern] = 'users/[user:name]'
 variables[path_alias_whitelist][node] = true
 variables[path_alias_whitelist][taxonomy] = true
-variables[save_continue_quran] = 'Save and add fields'
+variables[path_alias_whitelist][user] = true
 variables[site_frontpage] = 'quran-english'
 variables[theme_default] = 'bootstrap_subtheme'
-variables[user_pictures] = '1'
-variables[user_picture_dimensions] = '1024x1024'
-variables[user_picture_file_size] = '800'
-variables[user_picture_style] = 'thumbnail'
-variables[user_register] = 2
 variables[views_defaults][quran] = true
 

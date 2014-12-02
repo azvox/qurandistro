@@ -4,8 +4,8 @@
  *
  * Perform actions to set up the site for this profile.
  */
-function the_holy_quran_distribution_install() {
-  // Enable some the_holy_quran_distribution blocks.
+function qurandistribution_7_x_1_0_install() {
+  // Enable some qurandistribution_7_x_1_0 blocks.
   $default_theme = 'bootstrap_subtheme';
   $admin_theme = 'seven';
   // disable all themes
@@ -289,7 +289,8 @@ function the_holy_quran_distribution_install() {
   menu_rebuild();
   // revert features to ensure they are all installed
   $features = array(
-    'feeds_import'
+    'feeds_import',
+    'quran_importer'
   );
   features_revert($features);
   // ignore any rebuild messages

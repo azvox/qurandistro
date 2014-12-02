@@ -1,4 +1,4 @@
-; the_holy_quran_distribution make file for local development
+; qurandistribution_7_x_1_0 make file for local development
 core = "7.x"
 api = "2"
 

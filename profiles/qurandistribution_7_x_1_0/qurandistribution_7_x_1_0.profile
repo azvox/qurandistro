@@ -6,7 +6,7 @@
  */
 if (!function_exists("system_form_install_configure_form_alter")) {
   function system_form_install_configure_form_alter(&$form, $form_state) {
-    $form['site_information']['site_name']['#default_value'] = 'The holy Quran distribution';
+    $form['site_information']['site_name']['#default_value'] = 'qurandistribution-7.x-1.0';
   }
 }
 
@@ -18,7 +18,7 @@ if (!function_exists("system_form_install_configure_form_alter")) {
 if (!function_exists("system_form_install_select_profile_form_alter")) {
   function system_form_install_select_profile_form_alter(&$form, $form_state) {
     foreach ($form['profile'] as $key => $element) {
-      $form['profile'][$key]['#value'] = 'the_holy_quran_distribution';
+      $form['profile'][$key]['#value'] = 'qurandistribution_7_x_1_0';
     }
   }
 }

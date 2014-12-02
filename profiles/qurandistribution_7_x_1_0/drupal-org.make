@@ -1,4 +1,4 @@
-; the_holy_quran_distribution make file for d.o. usage
+; qurandistribution_7_x_1_0 make file for d.o. usage
 core = "7.x"
 api = "2"
 
@@ -18,6 +18,9 @@ projects[profiler_builder][subdir] = "contrib"
 
 projects[features][version] = "2.2"
 projects[features][subdir] = "contrib"
+
+projects[quran_importer][version] = "1.0-beta2"
+projects[quran_importer][subdir] = "contrib"
 
 projects[feeds][version] = "2.0-alpha8"
 projects[feeds][subdir] = "contrib"
