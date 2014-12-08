@@ -1,3 +1,11 @@
+This is Drupal Quran distribution 7.x1.0. Download it from github https://github.com/azvox/qurandistro/tree/qurandistribution-7.x-1.0. Download it to your desktop, Install it as you install Drupal. Go to https://github.com/azvox/quran-csv/tree/master/resources . Download one of the csv files included. We recommend https://github.com/azvox/quran-csv/blob/master/resources/quranall-online... as it contains all the known translations and recitations as well as Ayah ending symbols.  An alternative one is the same file without marks. If you just want english translations and some recitation use https://github.com/azvox/quran-csv/blob/master/resources/quran_english.csv.zip . After installation and download of your chosen file, click on the "Import Quran" menu on your user menu on the right hand side. Upload your download csv files(unzip it) by clicking on the "Browse" button and click import. Wait till it finishes and you will have a complete Quran website that looks like the above image.
+
+Check video at https://www.youtube.com/watch?v=JpFdCRcWCIQ
+
+Enjoy
+
+
+
 
 CONTENTS OF THIS FILE
 ---------------------
