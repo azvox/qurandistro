@@ -4,11 +4,10 @@ description = "Extra tools for use with profiler builder, more experimental."
 package = "Development"
 core = "7.x"
 configure = admin/config/development/profiler_builder/extras
-dependencies[] = "profiler_builder"
 
-; Information added by Drupal.org packaging script on 2014-11-11
-version = "7.x-1.2+4-dev"
+; Information added by Drupal.org packaging script on 2014-08-26
+version = "7.x-1.2"
 core = "7.x"
 project = "profiler_builder"
-datestamp = "1415730482"
+datestamp = "1409079116"
 
