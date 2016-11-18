@@ -98,6 +98,13 @@ function quran_importer_strongarm() {
   $strongarm = new stdClass();
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
+  $strongarm->name = 'jquery_update_jquery_version';
+  $strongarm->value = '1.7';
+  $export['jquery_update_jquery_version'] = $strongarm;
+
+  $strongarm = new stdClass();
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
   $strongarm->name = 'mediafront_views_options';
   $strongarm->value = array(
     'Quran' => array(
@@ -456,14 +463,14 @@ function quran_importer_strongarm() {
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'site_name';
-  $strongarm->value = 'The holy Quran distribution';
+  $strongarm->value = 'The Holy Quran distribution';
   $export['site_name'] = $strongarm;
 
   $strongarm = new stdClass();
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'site_slogan';
-  $strongarm->value = 'The holy Quran-القرآن الكريم';
+  $strongarm->value = 'The Holy Quran-القرآن الكريم';
   $export['site_slogan'] = $strongarm;
 
   $strongarm = new stdClass();
