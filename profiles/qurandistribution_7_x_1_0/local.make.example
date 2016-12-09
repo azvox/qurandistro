@@ -1,4 +1,4 @@
-; qurandistribution_7_x_1_0 make file for local development
+; qurandistribution_7_x_1_1 make file for local development
 core = "7.x"
 api = "2"
 
@@ -8,10 +8,24 @@ includes[] = "drupal-org.make"
 
 ; +++++ Libraries +++++
 
+; autopager
+libraries[autopager][directory_name] = "autopager"
+libraries[autopager][type] = "library"
+libraries[autopager][destination] = "libraries"
+libraries[autopager][download][type] = "get"
+libraries[autopager][download][url] = "" ; TODO add download URI
+
 ; Twitter Bootstrap
 libraries[bootstrap][directory_name] = "bootstrap"
 libraries[bootstrap][type] = "library"
 libraries[bootstrap][destination] = "themes/contrib/bootstrap"
 libraries[bootstrap][download][type] = "get"
 libraries[bootstrap][download][url] = "http://twitter.github.com/bootstrap/assets/bootstrap.zip"
+
+; fontawesome
+libraries[fontawesome][directory_name] = "fontawesome"
+libraries[fontawesome][type] = "library"
+libraries[fontawesome][destination] = "libraries"
+libraries[fontawesome][download][type] = "get"
+libraries[fontawesome][download][url] = "" ; TODO add download URI
 

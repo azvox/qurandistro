@@ -10,7 +10,7 @@
 function quran_importer_menu_default_menu_links() {
   $menu_links = array();
 
-  // Exported menu link: main-menu_alafasy:<front>
+  // Exported menu link: main-menu_alafasy:<front>.
   $menu_links['main-menu_alafasy:<front>'] = array(
     'menu_name' => 'main-menu',
     'link_path' => '<front>',
@@ -31,7 +31,7 @@ function quran_importer_menu_default_menu_links() {
     'customized' => 1,
     'parent_identifier' => 'main-menu_recitations:<front>',
   );
-  // Exported menu link: main-menu_almuqaily:Almuqaily
+  // Exported menu link: main-menu_almuqaily:Almuqaily.
   $menu_links['main-menu_almuqaily:Almuqaily'] = array(
     'menu_name' => 'main-menu',
     'link_path' => 'Almuqaily',
@@ -52,7 +52,7 @@ function quran_importer_menu_default_menu_links() {
     'customized' => 1,
     'parent_identifier' => 'main-menu_recitations:<front>',
   );
-  // Exported menu link: main-menu_arabic-only:Arabic
+  // Exported menu link: main-menu_arabic-only:Arabic.
   $menu_links['main-menu_arabic-only:Arabic'] = array(
     'menu_name' => 'main-menu',
     'link_path' => 'Arabic',
@@ -73,7 +73,7 @@ function quran_importer_menu_default_menu_links() {
     'customized' => 1,
     'parent_identifier' => 'main-menu_translations:<front>',
   );
-  // Exported menu link: main-menu_english-saheeh:Quran-Saxiix
+  // Exported menu link: main-menu_english-saheeh:Quran-Saxiix.
   $menu_links['main-menu_english-saheeh:Quran-Saxiix'] = array(
     'menu_name' => 'main-menu',
     'link_path' => 'Quran-Saxiix',
@@ -94,7 +94,7 @@ function quran_importer_menu_default_menu_links() {
     'customized' => 1,
     'parent_identifier' => 'main-menu_translations:<front>',
   );
-  // Exported menu link: main-menu_english-yusuf-ali:quran-english
+  // Exported menu link: main-menu_english-yusuf-ali:quran-english.
   $menu_links['main-menu_english-yusuf-ali:quran-english'] = array(
     'menu_name' => 'main-menu',
     'link_path' => 'quran-english',
@@ -115,7 +115,7 @@ function quran_importer_menu_default_menu_links() {
     'customized' => 1,
     'parent_identifier' => 'main-menu_translations:<front>',
   );
-  // Exported menu link: main-menu_quran-in-english:English-literal
+  // Exported menu link: main-menu_quran-in-english:English-literal.
   $menu_links['main-menu_quran-in-english:English-literal'] = array(
     'menu_name' => 'main-menu',
     'link_path' => 'English-literal',
@@ -136,7 +136,7 @@ function quran_importer_menu_default_menu_links() {
     'customized' => 1,
     'parent_identifier' => 'main-menu_translations:<front>',
   );
-  // Exported menu link: main-menu_quran-sudays:sudays
+  // Exported menu link: main-menu_quran-sudays:sudays.
   $menu_links['main-menu_quran-sudays:sudays'] = array(
     'menu_name' => 'main-menu',
     'link_path' => 'sudays',
@@ -157,7 +157,7 @@ function quran_importer_menu_default_menu_links() {
     'customized' => 1,
     'parent_identifier' => 'main-menu_recitations:<front>',
   );
-  // Exported menu link: main-menu_recitations:<front>
+  // Exported menu link: main-menu_recitations:<front>.
   $menu_links['main-menu_recitations:<front>'] = array(
     'menu_name' => 'main-menu',
     'link_path' => '<front>',
@@ -177,7 +177,7 @@ function quran_importer_menu_default_menu_links() {
     'weight' => 0,
     'customized' => 1,
   );
-  // Exported menu link: main-menu_translations:<front>
+  // Exported menu link: main-menu_translations:<front>.
   $menu_links['main-menu_translations:<front>'] = array(
     'menu_name' => 'main-menu',
     'link_path' => '<front>',
@@ -197,7 +197,7 @@ function quran_importer_menu_default_menu_links() {
     'weight' => 0,
     'customized' => 1,
   );
-  // Exported menu link: navigation_import-quran:import
+  // Exported menu link: navigation_import-quran:import.
   $menu_links['navigation_import-quran:import'] = array(
     'menu_name' => 'navigation',
     'link_path' => 'import',
@@ -217,7 +217,7 @@ function quran_importer_menu_default_menu_links() {
     'weight' => 0,
     'customized' => 1,
   );
-  // Exported menu link: user-menu_import-quran:import/quran_importer
+  // Exported menu link: user-menu_import-quran:import/quran_importer.
   $menu_links['user-menu_import-quran:import/quran_importer'] = array(
     'menu_name' => 'user-menu',
     'link_path' => 'import/quran_importer',
@@ -237,6 +237,7 @@ function quran_importer_menu_default_menu_links() {
     'weight' => 0,
     'customized' => 1,
   );
+
   // Translatables
   // Included for use with string extractors like potx.
   t('Alafasy');
@@ -249,7 +250,6 @@ function quran_importer_menu_default_menu_links() {
   t('Translations');
   t('quran-in-english');
   t('quran-sudays');
-
 
   return $menu_links;
 }
