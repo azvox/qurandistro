@@ -2826,7 +2826,7 @@ function quran_importer_field_default_field_instances() {
         'module' => 'taxonomy',
         'settings' => array(),
         'type' => 'taxonomy_term_reference_link',
-        'weight' => 122,
+        'weight' => 128,
       ),
       'teaser' => array(
         'label' => 'above',
@@ -2854,7 +2854,7 @@ function quran_importer_field_default_field_instances() {
       'module' => 'options',
       'settings' => array(),
       'type' => 'options_select',
-      'weight' => 153,
+      'weight' => 159,
     ),
   );
 
@@ -3252,7 +3252,7 @@ function quran_importer_field_default_field_instances() {
         'module' => 'taxonomy',
         'settings' => array(),
         'type' => 'taxonomy_term_reference_link',
-        'weight' => 124,
+        'weight' => 127,
       ),
       'teaser' => array(
         'label' => 'above',
@@ -3280,7 +3280,7 @@ function quran_importer_field_default_field_instances() {
       'module' => 'options',
       'settings' => array(),
       'type' => 'options_select',
-      'weight' => 155,
+      'weight' => 158,
     ),
   );
 
@@ -3828,7 +3828,7 @@ function quran_importer_field_default_field_instances() {
         'module' => 'taxonomy',
         'settings' => array(),
         'type' => 'taxonomy_term_reference_link',
-        'weight' => 120,
+        'weight' => 129,
       ),
       'teaser' => array(
         'label' => 'above',
@@ -3856,7 +3856,7 @@ function quran_importer_field_default_field_instances() {
       'module' => 'options',
       'settings' => array(),
       'type' => 'options_select',
-      'weight' => 151,
+      'weight' => 160,
     ),
   );
 
@@ -3954,6 +3954,50 @@ function quran_importer_field_default_field_instances() {
       'settings' => array(),
       'type' => 'options_select',
       'weight' => 111,
+    ),
+  );
+
+  // Exported field_instance: 'node-quran-field_sura_tag'.
+  $field_instances['node-quran-field_sura_tag'] = array(
+    'bundle' => 'quran',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'taxonomy',
+        'settings' => array(),
+        'type' => 'taxonomy_term_reference_link',
+        'weight' => 130,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_sura_tag',
+    'label' => 'Sura-tag',
+    'required' => 0,
+    'settings' => array(
+      'mediafront' => array(
+        'custom' => '',
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+      ),
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'options',
+      'settings' => array(),
+      'type' => 'options_select',
+      'weight' => 161,
     ),
   );
 
@@ -4063,6 +4107,7 @@ function quran_importer_field_default_field_instances() {
   t('Ayahid');
   t('Body');
   t('Content_en');
+  t('Sura-tag');
   t('Tafseer_no');
   t('abbad');
   t('abdulbasit');

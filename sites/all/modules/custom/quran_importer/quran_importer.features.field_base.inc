@@ -1153,7 +1153,7 @@ function quran_importer_field_default_field_bases() {
   // Exported field_base: 'field_hizb_tag'.
   $field_bases['field_hizb_tag'] = array(
     'active' => 1,
-    'cardinality' => 1,
+    'cardinality' => -1,
     'deleted' => 0,
     'entity_types' => array(),
     'field_name' => 'field_hizb_tag',
@@ -1167,7 +1167,7 @@ function quran_importer_field_default_field_bases() {
     'settings' => array(
       'allowed_values' => array(
         0 => array(
-          'vocabulary' => 'tags',
+          'vocabulary' => 'hizb_tag',
           'parent' => 0,
         ),
       ),
@@ -1341,7 +1341,7 @@ function quran_importer_field_default_field_bases() {
   // Exported field_base: 'field_juz_tag'.
   $field_bases['field_juz_tag'] = array(
     'active' => 1,
-    'cardinality' => 1,
+    'cardinality' => -1,
     'deleted' => 0,
     'entity_types' => array(),
     'field_name' => 'field_juz_tag',
@@ -1355,7 +1355,7 @@ function quran_importer_field_default_field_bases() {
     'settings' => array(
       'allowed_values' => array(
         0 => array(
-          'vocabulary' => 'tags',
+          'vocabulary' => 'juz_tag',
           'parent' => 0,
         ),
       ),
@@ -1508,7 +1508,7 @@ function quran_importer_field_default_field_bases() {
   // Exported field_base: 'field_page_tag'.
   $field_bases['field_page_tag'] = array(
     'active' => 1,
-    'cardinality' => 1,
+    'cardinality' => -1,
     'deleted' => 0,
     'entity_types' => array(),
     'field_name' => 'field_page_tag',
@@ -1522,7 +1522,7 @@ function quran_importer_field_default_field_bases() {
     'settings' => array(
       'allowed_values' => array(
         0 => array(
-          'vocabulary' => 'tags',
+          'vocabulary' => 'page_tag',
           'parent' => 0,
         ),
       ),
@@ -1585,7 +1585,7 @@ function quran_importer_field_default_field_bases() {
   // Exported field_base: 'field_rubu_tag'.
   $field_bases['field_rubu_tag'] = array(
     'active' => 1,
-    'cardinality' => 1,
+    'cardinality' => -1,
     'deleted' => 0,
     'entity_types' => array(),
     'field_name' => 'field_rubu_tag',
@@ -1599,7 +1599,7 @@ function quran_importer_field_default_field_bases() {
     'settings' => array(
       'allowed_values' => array(
         0 => array(
-          'vocabulary' => 'tags',
+          'vocabulary' => 'rubu_tag',
           'parent' => 0,
         ),
       ),
@@ -1641,6 +1641,32 @@ function quran_importer_field_default_field_bases() {
       'allowed_values' => array(
         0 => array(
           'vocabulary' => 'sura_name',
+          'parent' => 0,
+        ),
+      ),
+    ),
+    'translatable' => 0,
+    'type' => 'taxonomy_term_reference',
+  );
+
+  // Exported field_base: 'field_sura_tag'.
+  $field_bases['field_sura_tag'] = array(
+    'active' => 1,
+    'cardinality' => -1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_sura_tag',
+    'indexes' => array(
+      'tid' => array(
+        0 => 'tid',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'taxonomy',
+    'settings' => array(
+      'allowed_values' => array(
+        0 => array(
+          'vocabulary' => 'sura_tag',
           'parent' => 0,
         ),
       ),

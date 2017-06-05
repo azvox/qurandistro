@@ -99,7 +99,7 @@ function quran_importer_strongarm() {
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'jquery_update_jquery_version';
-  $strongarm->value = '1.7';
+  $strongarm->value = '1.10';
   $export['jquery_update_jquery_version'] = $strongarm;
 
   $strongarm = new stdClass();
@@ -393,6 +393,46 @@ function quran_importer_strongarm() {
         'custom' => '',
       ),
       'field_chapter_number' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_sura_tag' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_sura_tag_tid' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_juz_tag' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_juz_tag_tid' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_page_tag' => array(
         'link_to_player' => 0,
         'field_type' => '0',
         'media_type' => 'media',
@@ -1179,6 +1219,200 @@ function quran_importer_strongarm() {
         'custom' => '',
       ),
     ),
+    'juz_links' => array(
+      'field_linktitle' => array(
+        'link_to_player' => 0,
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+        'custom' => '',
+      ),
+      'field_juzp_no' => array(
+        'link_to_player' => 0,
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+        'custom' => '',
+      ),
+      'field_juzlink' => array(
+        'link_to_player' => 0,
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+        'custom' => '',
+      ),
+    ),
+    'recitations' => array(
+      'field_page_no_value' => array(
+        'link_to_player' => 0,
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+        'custom' => '',
+      ),
+    ),
+    'sura_links' => array(
+      'field_suralink' => array(
+        'link_to_player' => 0,
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+        'custom' => '',
+      ),
+      'title' => array(
+        'link_to_player' => 0,
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+        'custom' => '',
+      ),
+      'field_pages_no' => array(
+        'link_to_player' => 0,
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+        'custom' => '',
+      ),
+      'field_total_ayah' => array(
+        'link_to_player' => 0,
+        'field_type' => 0,
+        'media_type' => 'media',
+        'preview' => 0,
+        'thumbnail' => 0,
+        'custom' => '',
+      ),
+    ),
+    'surahview' => array(
+      'name' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+    ),
+    'juz' => array(
+      'title' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_content_ar' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_page_tag' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_content_en' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'name' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'term_node_tid' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'status' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_juz_tag' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_juz_tag_tid' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_juzid' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_sura_tag' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_alafasy' => array(
+        'link_to_player' => 1,
+        'field_type' => 'media',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'mediafront_player' => array(
+        'link_to_player' => 1,
+        'field_type' => 'media',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+      'field_page_tag_tid' => array(
+        'link_to_player' => 0,
+        'field_type' => '0',
+        'media_type' => 'media',
+        'preview' => '0',
+        'thumbnail' => '0',
+        'custom' => '',
+      ),
+    ),
   );
   $export['mediafront_views_options'] = $strongarm;
 
@@ -1241,7 +1475,7 @@ function quran_importer_strongarm() {
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'site_name';
-  $strongarm->value = 'qurandistribution';
+  $strongarm->value = 'DesktopQuran';
   $export['site_name'] = $strongarm;
 
   $strongarm = new stdClass();

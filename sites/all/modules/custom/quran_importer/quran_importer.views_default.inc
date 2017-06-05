@@ -104,7 +104,7 @@ function quran_importer_views_default_views() {
   $handler->display->display_options['exposed_form']['options']['reset_button'] = TRUE;
   $handler->display->display_options['exposed_form']['options']['autosubmit'] = TRUE;
   $handler->display->display_options['pager']['type'] = 'mini';
-  $handler->display->display_options['pager']['options']['items_per_page'] = '32';
+  $handler->display->display_options['pager']['options']['items_per_page'] = '15';
   $handler->display->display_options['pager']['options']['offset'] = '0';
   $handler->display->display_options['pager']['options']['id'] = '0';
   $handler->display->display_options['style_plugin'] = 'default';
@@ -179,6 +179,21 @@ function quran_importer_views_default_views() {
   $handler->display->display_options['fields']['field_content_en_tr_1']['id'] = 'field_content_en_tr_1';
   $handler->display->display_options['fields']['field_content_en_tr_1']['table'] = 'field_data_field_content_en_tr';
   $handler->display->display_options['fields']['field_content_en_tr_1']['field'] = 'field_content_en_tr';
+  /* Field: Content: almuaiqly */
+  $handler->display->display_options['fields']['field_almuaiqly']['id'] = 'field_almuaiqly';
+  $handler->display->display_options['fields']['field_almuaiqly']['table'] = 'field_data_field_almuaiqly';
+  $handler->display->display_options['fields']['field_almuaiqly']['field'] = 'field_almuaiqly';
+  $handler->display->display_options['fields']['field_almuaiqly']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['field_almuaiqly']['type'] = 'mediafront_player';
+  $handler->display->display_options['fields']['field_almuaiqly']['settings'] = array(
+    'preset' => 'quran_player',
+  );
+  /* Field: Content: Sura-tag */
+  $handler->display->display_options['fields']['field_sura_tag']['id'] = 'field_sura_tag';
+  $handler->display->display_options['fields']['field_sura_tag']['table'] = 'field_data_field_sura_tag';
+  $handler->display->display_options['fields']['field_sura_tag']['field'] = 'field_sura_tag';
+  $handler->display->display_options['fields']['field_sura_tag']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['field_sura_tag']['delta_offset'] = '0';
   /* Filter criterion: Content: Published */
   $handler->display->display_options['filters']['status']['id'] = 'status';
   $handler->display->display_options['filters']['status']['table'] = 'node';
@@ -549,6 +564,24 @@ function quran_importer_views_default_views() {
     1 => 0,
     3 => 0,
   );
+  /* Filter criterion: Content: Sura-tag (field_sura_tag) */
+  $handler->display->display_options['filters']['field_sura_tag_tid']['id'] = 'field_sura_tag_tid';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['table'] = 'field_data_field_sura_tag';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['field'] = 'field_sura_tag_tid';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['operator_id'] = 'field_sura_tag_tid_op';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['label'] = 'Sura-tag (field_sura_tag)';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['operator'] = 'field_sura_tag_tid_op';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['identifier'] = 'field_sura_tag_tid';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group_info']['label'] = 'Sura-tag (field_sura_tag)';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group_info']['identifier'] = 'field_sura_tag_tid';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group_info']['remember'] = FALSE;
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group_info']['group_items'] = array(
+    1 => array(),
+    2 => array(),
+    3 => array(),
+  );
+  $handler->display->display_options['filters']['field_sura_tag_tid']['vocabulary'] = 'sura_tag';
 
   /* Display: Yusuf Ali */
   $handler = $view->new_display('page', 'Yusuf Ali', 'page');
@@ -556,7 +589,7 @@ function quran_importer_views_default_views() {
   $handler->display->display_options['style_plugin'] = 'table';
   $handler->display->display_options['style_options']['grouping'] = array(
     0 => array(
-      'field' => 'field_sura_name',
+      'field' => 'field_page_tag',
       'rendered' => 1,
       'rendered_strip' => 0,
     ),
@@ -564,10 +597,15 @@ function quran_importer_views_default_views() {
   $handler->display->display_options['style_options']['columns'] = array(
     'field_content_en' => 'field_content_en',
     'field_content_ar' => 'field_content_ar',
+    'field_sura_tag' => 'field_sura_tag',
     'field_alafasy' => 'field_alafasy',
     'field_ayah_chapter_number' => 'field_ayah_chapter_number',
     'field_ayahid' => 'field_ayahid',
-    'field_sura_name' => 'field_sura_name',
+    'field_content_en_tr' => 'field_content_en_tr',
+    'field_content_en_tr_1' => 'field_content_en_tr_1',
+    'field_almuaiqly' => 'field_almuaiqly',
+    'field_juz_tag' => 'field_juz_tag',
+    'field_page_tag' => 'field_page_tag',
   );
   $handler->display->display_options['style_options']['default'] = '-1';
   $handler->display->display_options['style_options']['info'] = array(
@@ -582,6 +620,11 @@ function quran_importer_views_default_views() {
       'sortable' => 0,
       'default_sort_order' => 'asc',
       'align' => 'views-align-right',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'field_sura_tag' => array(
+      'align' => '',
       'separator' => '',
       'empty_column' => 0,
     ),
@@ -606,9 +649,33 @@ function quran_importer_views_default_views() {
       'separator' => '',
       'empty_column' => 0,
     ),
-    'field_sura_name' => array(
+    'field_content_en_tr' => array(
       'sortable' => 0,
       'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'field_content_en_tr_1' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'field_almuaiqly' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'field_juz_tag' => array(
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'field_page_tag' => array(
       'align' => '',
       'separator' => '',
       'empty_column' => 0,
@@ -630,8 +697,14 @@ function quran_importer_views_default_views() {
   $handler->display->display_options['fields']['field_content_ar']['field'] = 'field_content_ar';
   $handler->display->display_options['fields']['field_content_ar']['label'] = '';
   $handler->display->display_options['fields']['field_content_ar']['alter']['alter_text'] = TRUE;
-  $handler->display->display_options['fields']['field_content_ar']['alter']['text'] = '<h2>[field_content_ar] </h2>';
+  $handler->display->display_options['fields']['field_content_ar']['alter']['text'] = '<h3>[field_content_ar] </h3>';
   $handler->display->display_options['fields']['field_content_ar']['element_label_colon'] = FALSE;
+  /* Field: Content: Sura-tag */
+  $handler->display->display_options['fields']['field_sura_tag']['id'] = 'field_sura_tag';
+  $handler->display->display_options['fields']['field_sura_tag']['table'] = 'field_data_field_sura_tag';
+  $handler->display->display_options['fields']['field_sura_tag']['field'] = 'field_sura_tag';
+  $handler->display->display_options['fields']['field_sura_tag']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['field_sura_tag']['delta_offset'] = '0';
   /* Field: Content: alafasy */
   $handler->display->display_options['fields']['field_alafasy']['id'] = 'field_alafasy';
   $handler->display->display_options['fields']['field_alafasy']['table'] = 'field_data_field_alafasy';
@@ -659,14 +732,143 @@ function quran_importer_views_default_views() {
     'thousand_separator' => ' ',
     'prefix_suffix' => 1,
   );
-  /* Field: Content: sura name */
-  $handler->display->display_options['fields']['field_sura_name']['id'] = 'field_sura_name';
-  $handler->display->display_options['fields']['field_sura_name']['table'] = 'field_data_field_sura_name';
-  $handler->display->display_options['fields']['field_sura_name']['field'] = 'field_sura_name';
-  $handler->display->display_options['fields']['field_sura_name']['label'] = '';
-  $handler->display->display_options['fields']['field_sura_name']['exclude'] = TRUE;
-  $handler->display->display_options['fields']['field_sura_name']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['field_sura_name']['type'] = 'taxonomy_term_reference_plain';
+  /* Field: Content: content_en_tr */
+  $handler->display->display_options['fields']['field_content_en_tr']['id'] = 'field_content_en_tr';
+  $handler->display->display_options['fields']['field_content_en_tr']['table'] = 'field_data_field_content_en_tr';
+  $handler->display->display_options['fields']['field_content_en_tr']['field'] = 'field_content_en_tr';
+  $handler->display->display_options['fields']['field_content_en_tr']['exclude'] = TRUE;
+  /* Field: Content: content_en_tr */
+  $handler->display->display_options['fields']['field_content_en_tr_1']['id'] = 'field_content_en_tr_1';
+  $handler->display->display_options['fields']['field_content_en_tr_1']['table'] = 'field_data_field_content_en_tr';
+  $handler->display->display_options['fields']['field_content_en_tr_1']['field'] = 'field_content_en_tr';
+  $handler->display->display_options['fields']['field_content_en_tr_1']['exclude'] = TRUE;
+  /* Field: Content: almuaiqly */
+  $handler->display->display_options['fields']['field_almuaiqly']['id'] = 'field_almuaiqly';
+  $handler->display->display_options['fields']['field_almuaiqly']['table'] = 'field_data_field_almuaiqly';
+  $handler->display->display_options['fields']['field_almuaiqly']['field'] = 'field_almuaiqly';
+  $handler->display->display_options['fields']['field_almuaiqly']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['field_almuaiqly']['type'] = 'mediafront_player';
+  $handler->display->display_options['fields']['field_almuaiqly']['settings'] = array(
+    'preset' => 'quran_player',
+  );
+  /* Field: Content: juz-tag */
+  $handler->display->display_options['fields']['field_juz_tag']['id'] = 'field_juz_tag';
+  $handler->display->display_options['fields']['field_juz_tag']['table'] = 'field_data_field_juz_tag';
+  $handler->display->display_options['fields']['field_juz_tag']['field'] = 'field_juz_tag';
+  $handler->display->display_options['fields']['field_juz_tag']['label'] = '';
+  $handler->display->display_options['fields']['field_juz_tag']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['field_juz_tag']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['field_juz_tag']['delta_offset'] = '0';
+  /* Field: Content: page-tag */
+  $handler->display->display_options['fields']['field_page_tag']['id'] = 'field_page_tag';
+  $handler->display->display_options['fields']['field_page_tag']['table'] = 'field_data_field_page_tag';
+  $handler->display->display_options['fields']['field_page_tag']['field'] = 'field_page_tag';
+  $handler->display->display_options['fields']['field_page_tag']['label'] = '';
+  $handler->display->display_options['fields']['field_page_tag']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['field_page_tag']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['field_page_tag']['delta_offset'] = '0';
+  $handler->display->display_options['defaults']['filter_groups'] = FALSE;
+  $handler->display->display_options['defaults']['filters'] = FALSE;
+  /* Filter criterion: Content: Sura-tag (field_sura_tag) */
+  $handler->display->display_options['filters']['field_sura_tag_tid']['id'] = 'field_sura_tag_tid';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['table'] = 'field_data_field_sura_tag';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['field'] = 'field_sura_tag_tid';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['value'] = '';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group'] = 1;
+  $handler->display->display_options['filters']['field_sura_tag_tid']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['operator_id'] = 'field_sura_tag_tid_op';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['label'] = 'Select Surah';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['operator'] = 'field_sura_tag_tid_op';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['identifier'] = 'field_sura_tag_tid';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['expose']['remember_roles'] = array(
+    2 => '2',
+    1 => 0,
+    3 => 0,
+  );
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group_info']['label'] = 'Sura-tag (field_sura_tag)';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group_info']['identifier'] = 'field_sura_tag_tid';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group_info']['remember'] = FALSE;
+  $handler->display->display_options['filters']['field_sura_tag_tid']['group_info']['group_items'] = array(
+    1 => array(),
+    2 => array(),
+    3 => array(),
+  );
+  $handler->display->display_options['filters']['field_sura_tag_tid']['type'] = 'select';
+  $handler->display->display_options['filters']['field_sura_tag_tid']['vocabulary'] = 'sura_tag';
+  /* Filter criterion: Content: juz-tag (field_juz_tag) */
+  $handler->display->display_options['filters']['field_juz_tag_tid']['id'] = 'field_juz_tag_tid';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['table'] = 'field_data_field_juz_tag';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['field'] = 'field_juz_tag_tid';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['value'] = '';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['group'] = 1;
+  $handler->display->display_options['filters']['field_juz_tag_tid']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['field_juz_tag_tid']['expose']['operator_id'] = 'field_juz_tag_tid_op';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['expose']['label'] = 'Select Juz';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['expose']['operator'] = 'field_juz_tag_tid_op';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['expose']['identifier'] = 'field_juz_tag_tid';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['expose']['remember_roles'] = array(
+    2 => '2',
+    1 => 0,
+    3 => 0,
+  );
+  $handler->display->display_options['filters']['field_juz_tag_tid']['group_info']['label'] = 'juz-tag (field_juz_tag)';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['group_info']['identifier'] = 'field_juz_tag_tid';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['group_info']['remember'] = FALSE;
+  $handler->display->display_options['filters']['field_juz_tag_tid']['group_info']['group_items'] = array(
+    1 => array(),
+    2 => array(),
+    3 => array(),
+  );
+  $handler->display->display_options['filters']['field_juz_tag_tid']['type'] = 'select';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['vocabulary'] = 'juz_tag';
+  $handler->display->display_options['filters']['field_juz_tag_tid']['hierarchy'] = 1;
+  /* Filter criterion: Content: Published */
+  $handler->display->display_options['filters']['status']['id'] = 'status';
+  $handler->display->display_options['filters']['status']['table'] = 'node';
+  $handler->display->display_options['filters']['status']['field'] = 'status';
+  $handler->display->display_options['filters']['status']['value'] = 1;
+  $handler->display->display_options['filters']['status']['group'] = 1;
+  $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+  /* Filter criterion: Content: Type */
+  $handler->display->display_options['filters']['type']['id'] = 'type';
+  $handler->display->display_options['filters']['type']['table'] = 'node';
+  $handler->display->display_options['filters']['type']['field'] = 'type';
+  $handler->display->display_options['filters']['type']['value'] = array(
+    'quran' => 'quran',
+  );
+  $handler->display->display_options['filters']['type']['group'] = 1;
+  /* Filter criterion: Content: content_en_tr (field_content_en_tr) */
+  $handler->display->display_options['filters']['field_content_en_tr_value']['id'] = 'field_content_en_tr_value';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['table'] = 'field_data_field_content_en_tr';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['field'] = 'field_content_en_tr_value';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['operator'] = 'contains';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['group'] = 1;
+  $handler->display->display_options['filters']['field_content_en_tr_value']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['field_content_en_tr_value']['expose']['operator_id'] = 'field_content_en_tr_value_op';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['expose']['label'] = 'Search Ayah in Latin(Sound)';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['expose']['description'] = 'For example bismi';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['expose']['operator'] = 'field_content_en_tr_value_op';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['expose']['identifier'] = 'field_content_en_tr_value';
+  $handler->display->display_options['filters']['field_content_en_tr_value']['expose']['remember_roles'] = array(
+    2 => '2',
+    1 => 0,
+    3 => 0,
+  );
+  /* Filter criterion: Content: Ayah_chapter_number (field_ayah_chapter_number) */
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['id'] = 'field_ayah_chapter_number_value';
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['table'] = 'field_data_field_ayah_chapter_number';
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['field'] = 'field_ayah_chapter_number_value';
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['group'] = 1;
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['expose']['operator_id'] = 'field_ayah_chapter_number_value_op';
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['expose']['label'] = 'Search Ayah Number';
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['expose']['operator'] = 'field_ayah_chapter_number_value_op';
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['expose']['identifier'] = 'field_ayah_chapter_number_value';
+  $handler->display->display_options['filters']['field_ayah_chapter_number_value']['expose']['remember_roles'] = array(
+    2 => '2',
+    1 => 0,
+    3 => 0,
+  );
   $handler->display->display_options['path'] = 'quran-english';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'quran_english';
@@ -1226,56 +1428,6 @@ function quran_importer_views_default_views() {
   $handler->display->display_options['defaults']['style_options'] = FALSE;
   $handler->display->display_options['defaults']['row_plugin'] = FALSE;
   $handler->display->display_options['defaults']['row_options'] = FALSE;
-  $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: Content: content_en_tr */
-  $handler->display->display_options['fields']['field_content_en_tr']['id'] = 'field_content_en_tr';
-  $handler->display->display_options['fields']['field_content_en_tr']['table'] = 'field_data_field_content_en_tr';
-  $handler->display->display_options['fields']['field_content_en_tr']['field'] = 'field_content_en_tr';
-  $handler->display->display_options['fields']['field_content_en_tr']['label'] = '';
-  $handler->display->display_options['fields']['field_content_en_tr']['element_label_colon'] = FALSE;
-  /* Field: Content: content_ar */
-  $handler->display->display_options['fields']['field_content_ar']['id'] = 'field_content_ar';
-  $handler->display->display_options['fields']['field_content_ar']['table'] = 'field_data_field_content_ar';
-  $handler->display->display_options['fields']['field_content_ar']['field'] = 'field_content_ar';
-  $handler->display->display_options['fields']['field_content_ar']['label'] = '';
-  $handler->display->display_options['fields']['field_content_ar']['alter']['alter_text'] = TRUE;
-  $handler->display->display_options['fields']['field_content_ar']['alter']['text'] = '<h2>[field_content_ar] </h2>';
-  $handler->display->display_options['fields']['field_content_ar']['element_label_colon'] = FALSE;
-  /* Field: Content: Ayah_chapter_number */
-  $handler->display->display_options['fields']['field_ayah_chapter_number']['id'] = 'field_ayah_chapter_number';
-  $handler->display->display_options['fields']['field_ayah_chapter_number']['table'] = 'field_data_field_ayah_chapter_number';
-  $handler->display->display_options['fields']['field_ayah_chapter_number']['field'] = 'field_ayah_chapter_number';
-  $handler->display->display_options['fields']['field_ayah_chapter_number']['exclude'] = TRUE;
-  $handler->display->display_options['fields']['field_ayah_chapter_number']['settings'] = array(
-    'thousand_separator' => ' ',
-    'prefix_suffix' => 1,
-  );
-  /* Field: Content: Ayahid */
-  $handler->display->display_options['fields']['field_ayahid']['id'] = 'field_ayahid';
-  $handler->display->display_options['fields']['field_ayahid']['table'] = 'field_data_field_ayahid';
-  $handler->display->display_options['fields']['field_ayahid']['field'] = 'field_ayahid';
-  $handler->display->display_options['fields']['field_ayahid']['exclude'] = TRUE;
-  $handler->display->display_options['fields']['field_ayahid']['settings'] = array(
-    'thousand_separator' => ' ',
-    'prefix_suffix' => 1,
-  );
-  /* Field: Content: sura name */
-  $handler->display->display_options['fields']['field_sura_name']['id'] = 'field_sura_name';
-  $handler->display->display_options['fields']['field_sura_name']['table'] = 'field_data_field_sura_name';
-  $handler->display->display_options['fields']['field_sura_name']['field'] = 'field_sura_name';
-  $handler->display->display_options['fields']['field_sura_name']['label'] = '';
-  $handler->display->display_options['fields']['field_sura_name']['exclude'] = TRUE;
-  $handler->display->display_options['fields']['field_sura_name']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['field_sura_name']['type'] = 'taxonomy_term_reference_plain';
-  /* Field: Content: almuaiqly */
-  $handler->display->display_options['fields']['field_almuaiqly']['id'] = 'field_almuaiqly';
-  $handler->display->display_options['fields']['field_almuaiqly']['table'] = 'field_data_field_almuaiqly';
-  $handler->display->display_options['fields']['field_almuaiqly']['field'] = 'field_almuaiqly';
-  $handler->display->display_options['fields']['field_almuaiqly']['exclude'] = TRUE;
-  $handler->display->display_options['fields']['field_almuaiqly']['type'] = 'mediafront_player';
-  $handler->display->display_options['fields']['field_almuaiqly']['settings'] = array(
-    'preset' => 'quran_player',
-  );
   $handler->display->display_options['path'] = 'Almuqaily';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'Almuqaily';

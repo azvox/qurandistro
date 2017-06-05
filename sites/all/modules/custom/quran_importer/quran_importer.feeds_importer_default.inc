@@ -26,6 +26,7 @@ function quran_importer_feeds_importer_default() {
         'allowed_schemes' => array(
           'public' => 'public',
         ),
+        'delete_uploaded_file' => FALSE,
       ),
     ),
     'parser' => array(
@@ -40,7 +41,7 @@ function quran_importer_feeds_importer_default() {
       'plugin_key' => 'FeedsNodeProcessor',
       'config' => array(
         'bundle' => 'quran',
-        'update_existing' => '1',
+        'update_existing' => '2',
         'expire' => '-1',
         'mappings' => array(
           0 => array(
@@ -72,6 +73,7 @@ function quran_importer_feeds_importer_default() {
             'target' => 'field_sura_name',
             'term_search' => '0',
             'autocreate' => 1,
+            'language' => 'und',
           ),
           5 => array(
             'source' => 'meaning',
@@ -523,12 +525,14 @@ function quran_importer_feeds_importer_default() {
             'target' => 'field_page_tag',
             'term_search' => '0',
             'autocreate' => 1,
+            'language' => 'und',
           ),
           80 => array(
             'source' => 'rubu-tag',
             'target' => 'field_rubu_tag',
             'term_search' => '0',
             'autocreate' => 1,
+            'language' => 'und',
           ),
           81 => array(
             'source' => 'rubuhizbid',
@@ -541,6 +545,7 @@ function quran_importer_feeds_importer_default() {
             'target' => 'field_hizb_tag',
             'term_search' => '0',
             'autocreate' => 1,
+            'language' => 'und',
           ),
           83 => array(
             'source' => 'hizbid',
@@ -560,12 +565,18 @@ function quran_importer_feeds_importer_default() {
             'unique' => FALSE,
             'language' => 'und',
           ),
+          86 => array(
+            'source' => 'Sura-tag',
+            'target' => 'field_sura_tag',
+            'term_search' => '0',
+            'autocreate' => 1,
+          ),
         ),
         'input_format' => 'plain_text',
         'author' => '1',
         'authorize' => 1,
         'skip_hash_check' => 0,
-        'insert_new' => 1,
+        'insert_new' => '1',
         'update_non_existent' => 'skip',
         'language' => 'und',
       ),
