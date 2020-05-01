@@ -1,7 +1,0 @@
-<?php
-/**
- * @file
- * Code for the mediafront_youtube feature.
- */
-
-include_once 'mediafront_youtube.features.inc';
