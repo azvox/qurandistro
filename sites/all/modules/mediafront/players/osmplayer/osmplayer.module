@@ -1,0 +1,992 @@
+<?php
+
+define('OSMPLAYER_COLORBOX_XPADDING', 30);
+define('OSMPLAYER_COLORBOX_YPADDING', 63);
+
+/**
+ * Implements hook_get_player()
+ */
+function osmplayer_get_player($params) {
+  global $base_url;
+  $template = (isset($params['template']) && $params['template']) ? $params['template'] : "default";
+  $showPlayer = isset($params['showWhenEmpty']) ? $params['showWhenEmpty'] : TRUE;
+
+  // Always show the player when viewing through the admin interface.
+  $showPlayer |= !empty($params['admin']);
+
+  // For reverse compatability...
+  if (!empty($params['playlistObj'])) {
+    $params['playlist'] = $params['playlistObj'];
+  }
+
+  // If they provide the playlist object, encode it as JSON.
+  if (!empty($params['playlist'])) {
+    switch (gettype($params['playlist'])) {
+      case 'string':
+        if (!preg_match('/^http(s)?:\/\//', $params['playlist'])) {
+          $params['playlist'] = '/mediafront_getplaylist/' . $params['playlist'];
+        }
+        $showPlayer = TRUE;
+        break;
+      case 'object':
+        $params['playlist'] = (array)$params['playlist'];
+      case 'array':
+        $showPlayer |= !empty($params['playlist']['total_rows']);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // If they provide the node object, encode it as JSON.
+  if (!empty($params['nodeObj'])) {
+    $showPlayer |= isset($params['nodeObj']['mediafiles']) && (count($params['nodeObj']['mediafiles']) > 0);
+    $params['node'] = $params['nodeObj'];
+  }
+  else {
+    $showPlayer |= isset($params['node']['mediafiles']) && (count($params['node']['mediafiles']) > 0);
+  }
+
+  // Add the pre-reel and post-reel
+  if (!empty($params['prereel']) && empty($params['node']['mediafiles']['media']['prereel'])) {
+    $params['node']['mediafiles']['media']['prereel'] = new MediaFile($params['prereel']);;
+  }
+
+  if (!empty($params['postreel']) && empty($params['node']['mediafiles']['media']['postreel'])) {
+    $params['node']['mediafiles']['media']['postreel'] = new MediaFile($params['postreel']);;
+  }
+
+  // Get and encode the player parameters.
+  if (!empty($params['logo'])) {
+    $params['logo'] = $base_url . '/' . ltrim($params['logo'], '/');
+  }
+  $params['swfplayer'] = $base_url . '/' . ltrim($params['swfplayer'], '/');
+
+  // Add the core media player files.
+  osmplayer_add_core_files($params);
+
+  $player_params = module_invoke_all('osmplayer_params', $params);
+  $params = array_merge($params, $player_params);
+  $player_params['node'] = &$params['node'];
+
+  // Allow other modules to alter the params.
+  drupal_alter('osmplayer_params', $params, $player_params);
+
+  // Get the id.
+  $id = $params['id'];
+
+  $output = '';
+
+  // Iterate through each parameter and filter it for output.
+  foreach ($params as $param => &$value) {
+    if (gettype($value) == 'string') {
+      $value = check_plain($value);
+    }
+  }
+
+  // If we wish to show the media player.
+  if ($showPlayer) {
+
+    $output = theme('osmplayer_' . $params['template'], array('params' => $params));
+
+    // Add the playlist connections.
+    $output .= osmplayer_add_connection($params, 'playlist');
+
+    // Add the controller connectiions.
+    $output .= osmplayer_add_connection($params, 'controller');
+
+    // Add the settings.
+    $output .= osmplayer_get_settings_output('mediafront', array($id => $player_params));
+  }
+
+  // Show the player.
+  return $output;
+}
+
+/**
+ * Adds the core osmplayer static files to the page.
+ * @param type $params
+ */
+function osmplayer_add_core_files(&$params) {
+
+  // Get the player information.
+  $info = osmplayer_get_info();
+
+  // Add the theme information if provided.
+  $themes = $info['themes'];
+  if (!empty($themes[$params['theme']])) {
+    $theme = $themes[$params['theme']];
+    drupal_add_css($theme['url'], $theme['options']);
+  }
+
+  // Add the library.
+  $library = 'osmplayer_' . $params['template'];
+  $library .= $params['debug'] ? '_debug' : '';
+  drupal_add_library('osmplayer', $library);
+
+  // Add any additional resources.
+  osmplayer_add_resources($info['resources']);
+
+  // Iterate through our plugins.
+  if (!empty($params['plugins'])) {
+    foreach ($params['plugins'] as $name => &$plugin) {
+
+      // Make sure this plugin is enabled.
+      if (!empty($plugin) && !empty($info['plugins'][$name])) {
+
+        // Add this plugins resources.
+        osmplayer_add_resources($info['plugins'][$name]);
+
+        // Make sure the params now pass the plugin object.
+        $plugin = $name;
+      }
+      else {
+
+        // Make sure this isn't added to the minplayer.
+        unset($params['plugins'][$name]);
+      }
+    }
+  }
+}
+
+/**
+ * Returns the settings output for this media player.
+ *
+ * @param type $settings
+ * @return type
+ */
+function osmplayer_get_settings_output($type, $settings) {
+  $js = 'Drupal.settings.' . $type . ' = Drupal.settings.' . $type . ' || {};';
+  $js .= 'jQuery.extend(Drupal.settings.' . $type . ', ' . drupal_json_encode($settings) . ');';
+  return theme('html_tag', array('element' => array(
+    '#tag' => 'script',
+    '#value' => $js,
+    '#attributes' => array(
+      'type' => 'text/javascript',
+    ),
+  )));
+}
+
+/**
+ * Implementation of hook_theme_registry_alter.
+ */
+function osmplayer_theme_registry_alter(&$theme_registry) {
+  if (!empty($theme_registry['media_colorbox'])) {
+    $theme_registry['media_colorbox']['preprocess functions'][] = 'osmplayer_media_colorbox_preprocess';
+  }
+}
+
+/**
+ * Preprocess a colorbox to add a mediafront preset to it.
+ */
+function osmplayer_media_colorbox_preprocess(&$variables) {
+  static $colorbox_params = null;
+
+  // Get the settings.
+  $settings = &$variables['display_settings'];
+
+  // Set the width and height based on the mediafront preset size.
+  if ($colorbox_params) {
+    $settings['fixed_width'] = intval($colorbox_params['width']) + OSMPLAYER_COLORBOX_XPADDING;
+    $settings['fixed_height'] = intval($colorbox_params['height']) + OSMPLAYER_COLORBOX_YPADDING;
+    return;
+  }
+
+  $file_id = $variables['file_id'];
+  if($file_id!=NULL){
+    $file = file_load($file_id);
+    $view = file_view_file($file, $settings['colorbox_view_mode'], $variables['langcode']);
+
+    // If the theme is a mediafront_player, then we need to add our files.
+    if ($view['#theme'] == 'mediafront_player') {
+
+      // Get the displays settings.
+      $preset = '';
+      $displays = file_displays($file->type, $settings['colorbox_view_mode']);
+      foreach ($displays as $formatter_type => $display) {
+       if (!empty($display['status'])) {
+         if (!empty($display['settings']['preset'])) {
+           $preset = $display['settings']['preset'];
+         }
+         break;
+       }
+      }
+
+      // If no preset is defined, then get the first one.
+      if (!$preset) {
+        $presets = mediafront_preset_get_presets();
+        $preset = array_shift($presets);
+        $preset = $preset['name'];
+      }
+
+      // Get the preset parameters and add the core javascript files.
+      $params = mediafront_get_preset_params($preset);
+
+      // Set a static width if it is 100%.
+      $params['width'] = ($params['width'] == '100%') ? '500px' : $params['width'];
+
+      // Add the width and height to the modal.
+      $settings['fixed_width'] = intval($params['width']) + OSMPLAYER_COLORBOX_XPADDING;
+      $settings['fixed_height'] = intval($params['height']) + OSMPLAYER_COLORBOX_YPADDING;
+      osmplayer_add_core_files($params);
+      $colorbox_params = $params;
+    }
+  }
+}
+
+/**
+ * This function will add osmplayer resources.
+ *
+ * @param type $info
+ * @param type $type
+ */
+function osmplayer_add_resources($resources) {
+  if (!empty($resources)) {
+    if (!empty($resources['js'])) {
+      foreach ($resources['js'] as $js => $data) {
+        drupal_add_js($js, $data);
+      }
+    }
+    if (!empty($resources['css'])) {
+      foreach ($resources['css'] as $css => $data) {
+        drupal_add_css($css, $data);
+      }
+    }
+  }
+}
+
+/**
+ * Connects two plugins.
+ *
+ * @param array $params The settings/parameters for this plugin.
+ * @param string $type The plugin type we are adding to the player.
+ */
+function osmplayer_add_connection($params, $type) {
+
+  $output = '';
+
+  // Check to see if connect is set.
+  if (!empty($params['connect']) && !empty($params['connect']['is' . $type])) {
+
+    $connnection = array_filter($params['connect']['is' . $type]);
+
+    // Make sure we have a connection.
+    if (!empty($connnection)) {
+
+      // Add the connection setting.
+      $output .= osmplayer_get_settings_output('mediafront_connect', array($params['id'] => array(
+        'type' => $type,
+        'connect' => $connnection
+      )));
+    }
+  }
+
+  return $output;
+}
+
+/**
+ * Implements hook_library
+ */
+function osmplayer_library() {
+
+  // Setup the options for the js inclusion.
+  $options = array('group' => JS_LIBRARY);
+
+  // Get the osmplayer path.
+  $path = drupal_get_path('module', 'osmplayer') . '/player';
+  $libraries = array(
+    'minplayer' => array(
+      'title' => 'minPlayer',
+      'version' => '0.1',
+      'js' => array(
+        $path . '/minplayer/bin/minplayer.compressed.js' => $options
+      ),
+      'dependencies' => array(
+        array('system', 'ui.slider'),
+      )
+    ),
+    'minplayer_debug' => array(
+      'title' => 'minPlayer (Debug Mode)',
+      'version' => '0.1',
+      'js' => array(
+        $path . '/minplayer/src/minplayer.compatibility.js' => $options,
+        $path . '/minplayer/src/minplayer.flags.js' => $options,
+        $path . '/minplayer/src/minplayer.async.js' => $options,
+        $path . '/minplayer/src/minplayer.plugin.js' => $options,
+        $path . '/minplayer/src/minplayer.display.js' => $options,
+        $path . '/minplayer/src/minplayer.js' => $options,
+        $path . '/minplayer/src/minplayer.image.js' => $options,
+        $path . '/minplayer/src/minplayer.file.js' => $options,
+        $path . '/minplayer/src/minplayer.playLoader.js' => $options,
+        $path . '/minplayer/src/minplayer.players.base.js' => $options,
+        $path . '/minplayer/src/minplayer.players.html5.js' => $options,
+        $path . '/minplayer/src/minplayer.players.flash.js' => $options,
+        $path . '/minplayer/src/minplayer.players.minplayer.js' => $options,
+        $path . '/minplayer/src/minplayer.players.youtube.js' => $options,
+        $path . '/minplayer/src/minplayer.players.vimeo.js' => $options,
+        $path . '/minplayer/src/minplayer.players.dailymotion.js' => $options,
+        $path . '/minplayer/src/minplayer.controller.js' => $options
+      ),
+      'dependencies' => array(
+        array('system', 'ui.slider')
+      )
+    ),
+    'osmplayer' => array(
+      'title' => 'OSM Player',
+      'version' => '0.1',
+      'js' => array(
+        drupal_get_path('module', 'osmplayer') . '/osmplayer_drupal.js' => $options,
+        $path . '/bin/osmplayer.compressed.js' => $options
+      ),
+      'dependencies' => array(
+        array('system', 'ui.slider')
+      )
+    ),
+    'osmplayer_debug' => array(
+      'title' => 'OSM Player (Debug Mode)',
+      'version' => '0.1',
+      'js' => array(
+        drupal_get_path('module', 'osmplayer') . '/osmplayer_drupal.js' => $options,
+        $path . '/src/osmplayer.js' => $options,
+        $path . '/src/osmplayer.parser.default.js' => $options,
+        $path . '/src/osmplayer.parser.youtube.js' => $options,
+        $path . '/src/osmplayer.parser.rss.js' => $options,
+        $path . '/src/osmplayer.parser.asx.js' => $options,
+        $path . '/src/osmplayer.parser.xspf.js' => $options,
+        $path . '/src/iscroll/src/iscroll.js' => $options,
+        $path . '/src/osmplayer.playlist.js' => $options,
+        $path . '/src/osmplayer.pager.js' => $options,
+        $path . '/src/osmplayer.teaser.js' => $options
+      ),
+      'dependencies' => array(
+        array('osmplayer', 'minplayer_debug')
+      )
+    )
+  );
+
+  // Get the player information.
+  $info = osmplayer_get_info();
+
+  // Add all of the templates to the libraries.
+  foreach ($info['templates'] as $template => $info) {
+    $libraries['osmplayer_' . $template] = array(
+      'title' => 'OSM Player (' . $template . ')',
+      'version' => '0.1',
+      'js' => $info['js'],
+      'css' => $info['css'],
+      'dependencies' => array(
+        array('osmplayer', 'osmplayer')
+      )
+    );
+    $libraries['osmplayer_' . $template . '_debug'] = array(
+      'title' => 'OSM Player (' . $template . '): Debug',
+      'version' => '0.1',
+      'js' => $info['js'],
+      'css' => $info['css'],
+      'dependencies' => array(
+        array('osmplayer', 'osmplayer_debug')
+      )
+    );
+  }
+
+  return $libraries;
+}
+
+/**
+ * Returns the path to the OSM Player.
+ */
+function osmplayer_get_path() {
+  return drupal_get_path('module', 'osmplayer') . '/player';
+}
+
+/**
+ * Implements hook_player_info()
+ */
+function osmplayer_player_info() {
+  $info = array();
+  $info['osmplayer'] = array(
+    'title' => 'Open Standard Media Player',
+    'description' => 'An Open Source - Open Standard, full featured media player.'
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_theme()
+ */
+function osmplayer_theme() {
+  $info = osmplayer_get_info();
+  $themes = array();
+  foreach ($info['templates'] as $template => $info) {
+    $themes['osmplayer_' . $template] = array(
+      'template' => 'osmplayer_' . $template,
+      'variables' => array('params' => NULL, 'templates' => NULL),
+      'path' => $info['path']
+    );
+  }
+
+  $themes['osmplayer_plugin_table'] = array(
+    'render element' => 'element'
+  );
+
+  return $themes;
+}
+
+/**
+ * Implements hook_osmplayer_params().
+ */
+function osmplayer_osmplayer_params($params) {
+  $settings = array();
+  $defaults = osmplayer_get_player_params();
+  foreach ($params as $key => $value) {
+    if (isset($defaults[$key])) {
+      $type = gettype($defaults[$key]);
+      if ($type == 'boolean' || $type == 'integer') {
+        settype($value, $type);
+      }
+      $settings[$key] = $value;
+    }
+  }
+  return $settings;
+}
+
+/**
+ * Implements hook_get_player_settings
+ *
+ * These are the settings that the module implements...
+ */
+function osmplayer_get_player_settings() {
+  return array(
+    'theme' => 'dark-hive',
+    'showWhenEmpty' => TRUE,
+    'showController' => TRUE,
+    'prereel' => '',
+    'postreel' => '',
+  );
+}
+
+/**
+ *  Implements hook_get_player_params.
+ *
+ *  These are the parameters that the player requires...
+ */
+function osmplayer_get_player_params() {
+  return array(
+    'id' => 'player',
+    'debug' => false,
+    'disptime' => 0,
+    'duration' => 0,
+    'volume' => 80,
+    'wmode' => 'transparent',
+    'preload' => TRUE,
+    'autoplay' => FALSE,
+    'autoload' => TRUE,
+    'scrollMode' => 'auto',
+    'scrollSpeed' => 20,
+    'showPlaylist' => TRUE,
+    'vertical' => TRUE,
+    'node' => array(),
+    'playlist' => '',
+    'pageLimit' => 10,
+    'preset' => '',
+    'autoNext' => TRUE,
+    'shuffle' => FALSE,
+    'loop' => FALSE,
+    'logo' => '/' . osmplayer_get_path() . '/logo.png',
+    'swfplayer' => '/' . osmplayer_get_path() . '/minplayer/flash/minplayer.swf',
+    'link' => 'http://www.mediafront.org',
+    'width' => '100%',
+    'height' => '450px',
+    'template' => 'default',
+    'playlistOnly' => FALSE,
+    'disablePlaylist' => FALSE,
+    'controllerOnly' => FALSE,
+    'volumeVertical' => TRUE,
+    'plugins' => array(),
+  );
+}
+
+/**
+ * Implements hook_player_settings_form
+ */
+function osmplayer_player_settings_form($preset) {
+
+  // Get the information.
+  $info = osmplayer_get_info();
+
+  // Get the player templates.
+  $templates = array_keys($info['templates']);
+  $templates = array_combine($templates, $templates);
+
+  // Get the themes.
+  $themes = array_keys($info['themes']);
+  $themes = array_combine($themes, $themes);
+
+  $form['presentation'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Presentation Settings'),
+    '#weight' => -10,
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#group' => 'player_settings',
+  );
+  $form['presentation']['theme'] = array(
+    '#type' => 'select',
+    '#title' => t('Theme'),
+    '#description' => t('Select the theme you would like to use for this player.  The theme provides the look and feel for the media player.  Select <strong>&lt;none&gt;</strong> if you would not like to use a theme.<br/>You can download new themes for the OSM Player using the jQuery UI <a target="_blank" href="http://jqueryui.com/themeroller">JQuery UI ThemeRoller</a> interface.  Once you have downloaded a new theme, simply place the contents of that download in the <strong>modules/mediafront/players/osmplayer/player/jquery-ui</strong> folder.  Once you refresh the browser, you should see your new theme show up in this list.<br/><br/><strong>IMPORTANT NOTE:  You cannot have more than one theme present on a page at any given time.  This will cause the themes to override one another causing issues.</strong>'),
+    '#options' => array_merge(array('none' => t('<none>')), $themes),
+    '#default_value' => $preset['settings']['theme']
+  );
+  $form['presentation']['template'] = array(
+    '#type' => 'select',
+    '#title' => t('Template'),
+    '#description' => t('Select the template you would like to use for this player.  The template provides specific functionality as well as the layout for the media player.  Each template can be found in the <strong>modules/mediafront/players/osmplayer/player/templates</strong> folder.'),
+    '#options' => $templates,
+    '#default_value' => $preset['settings']['template']
+  );
+  $form['presentation']['width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Player Width'),
+    '#description' => t('Enter the width of the player, or leave blank to provide the width from CSS.  <em>Example: "100%" or "300px".</em>'),
+    '#default_value' => $preset['settings']['width']
+  );
+  $form['presentation']['height'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Player Height'),
+    '#description' => t('Enter the height of the player, or leave blank to provide the height from CSS. <em>Example: "200px".</em>'),
+    '#default_value' => $preset['settings']['height']
+  );
+  $form['presentation']['showWhenEmpty'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show player when empty'),
+    '#description' => t('Check if you would like to show the player even if there is nothing to play'),
+    '#default_value' => $preset['settings']['showWhenEmpty']
+  );
+  $form['presentation']['wmode'] = array(
+    '#title' => t('Flash Window Mode'),
+    '#type' => 'select',
+    '#options' => array('none' => 'none', 'transparent' => 'transparent', 'window' => 'window'),
+    '#default_value' => $preset['settings']['wmode'],
+    '#description' => t('Selects which window mode you would like for the OSM Flash player to operate under (denoted by the <b>wmode</b> parameter in the object code)
+         <ul>
+            <li><b>none</b> - <em>No window mode</em></li>
+            <li><b>wmode=transparent</b> - <em>Allows for other elements to drop in front of the video (like a drop-down list), without the video showing over those elements.</em></li>
+            <li><b>wmode=window</b> - <em>Allows for the video to have full-screen support.</em></li>
+         </ul>')
+  );
+
+  $form['media_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Media Settings'),
+    '#weight' => -9,
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#group' => 'player_settings',
+  );
+  $form['media_settings']['prereel'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Pre-Reel'),
+    '#description' => t('Enter the path of a media file which you would like to play at the beginning of the main media content.'),
+    '#default_value' => $preset['settings']['prereel']
+  );
+  $form['media_settings']['postreel'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Post-Reel'),
+    '#description' => t('Enter the path of a media file which you would like to play at the end of the main media content.'),
+    '#default_value' => $preset['settings']['postreel']
+  );
+  $form['media_settings']['volume'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default Volume'),
+    '#description' => t('Enter the initial volume for the player.'),
+    '#default_value' => $preset['settings']['volume']
+  );
+  $form['media_settings']['autoplay'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto Start'),
+    '#description' => t('If checked, the media will automatically load and play once the page loads.'),
+    '#default_value' => $preset['settings']['autoplay']
+  );
+  $form['media_settings']['autoload'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto Load'),
+    '#description' => t('If checked, the media will automatically start loading once the page loads.'),
+    '#default_value' => $preset['settings']['autoload']
+  );
+
+  /*   * *********************** PLAYLIST SETTINGS ************************************ */
+  $form['playlist_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Playlist Settings'),
+    '#weight' => -8,
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#group' => 'player_settings',
+  );
+  $form['playlist_settings']['scrollSettings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Scroll Settings'),
+    '#collapsible' => true,
+    '#collapsed' => true
+  );
+  $form['playlist_settings']['scrollSettings']['scrollMode'] = array(
+    '#type' => 'select',
+    '#title' => t('Scroll Mode'),
+    '#options' => array('auto' => 'Auto Scroll', 'mouse' => 'Mouse Scroll', 'hover' => 'Hover Scroll', 'span' => 'Span Scroll', 'none' => 'No Scroll'),
+    '#description' => t('Specify how you would like the playlist to scroll.
+      <ul>
+        <li><strong>Auto Scroll</strong> - <em>Make the playlist scroll follow the mouse movements</em></li>
+      </ul>'),
+    '#default_value' => $preset['settings']['scrollMode']
+  );
+  $form['playlist_settings']['scrollSettings']['scrollSpeed'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Scroll Speed'),
+    '#description' => t('The speed which the playlist scrolls.'),
+    '#default_value' => $preset['settings']['scrollSpeed']
+  );
+  $form['playlist_settings']['displaySettings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Display Settings'),
+    '#collapsible' => true,
+    '#collapsed' => true
+  );
+  $form['playlist_settings']['displaySettings']['disablePlaylist'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Disable Playlist'),
+    '#description' => t('Will completely remove the playlist, but still provide content within the playlist.'),
+    '#default_value' => $preset['settings']['disablePlaylist']
+  );
+  $form['playlist_settings']['displaySettings']['showPlaylist'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show Playlist'),
+    '#description' => t('Select if you would like to see the playlist by default. ( They can then see the playlist my pressing the maximize button )'),
+    '#default_value' => $preset['settings']['showPlaylist']
+  );
+  $form['playlist_settings']['displaySettings']['playlistOnly'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Playlist Only'),
+    '#description' => t('Select if you would like to ONLY see the playlist.'),
+    '#default_value' => $preset['settings']['playlistOnly']
+  );
+  $form['playlist_settings']['displaySettings']['vertical'] = array(
+    '#type' => 'select',
+    '#title' => t('Playlist Orientation'),
+    '#options' => array(false => 'Horizontal', true => 'Vertical'),
+    '#description' => t('Selecting this will orient the playist either vertical or horizontal.  Note - This will only work if your template supports it.'),
+    '#default_value' => $preset['settings']['vertical']
+  );
+  $form['playlist_settings']['playlist'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default Playlist'),
+    '#description' => t('Enter the name or the URL of the playlist you would like to load by default.  This can either be an external XML file, or the name of the view that represents your playlist.  This, however, will be overridden if you explicitly provide the playlist when adding this preset to a page.'),
+    '#default_value' => $preset['settings']['playlist']
+  );
+  $form['playlist_settings']['pageLimit'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page Limit'),
+    '#description' => t('Specify how many nodes you would like to show in each page of the playlist.'),
+    '#default_value' => $preset['settings']['pageLimit']
+  );
+  $form['playlist_settings']['autoNext'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto Next'),
+    '#description' => t('Specify if you would the player to automatically move to the next node after the previous one finishes playing.'),
+    '#default_value' => $preset['settings']['autoNext']
+  );
+  $form['playlist_settings']['shuffle'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Shuffle'),
+    '#description' => t('If checked, the playlist will play in a random order.'),
+    '#default_value' => $preset['settings']['shuffle']
+  );
+  $form['playlist_settings']['loop'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Loop'),
+    '#description' => t('If checked, the media playlist will play over once it has been completed.  This also applies if there is only a single media being played.'),
+    '#default_value' => $preset['settings']['loop']
+  );
+
+  $form['control_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Controller Settings'),
+    '#weight' => -6,
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#group' => 'player_settings',
+  );
+  $form['control_settings']['showController'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show Controller'),
+    '#description' => t('Unchecking this will hide the control bar.'),
+    '#default_value' => $preset['settings']['showController']
+  );
+  $form['control_settings']['controllerOnly'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Controller Only'),
+    '#description' => t('Select if you would like to ONLY see the control bar.'),
+    '#default_value' => $preset['settings']['controllerOnly']
+  );
+  $form['control_settings']['volumeVertical'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Volume Vertical'),
+    '#description' => t('Unchecking this make the volume horizontal.'),
+    '#default_value' => $preset['settings']['volumeVertical']
+  );
+
+  $form['logo_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Logo Settings'),
+    '#weight' => -4,
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#group' => 'player_settings',
+  );
+  $form['logo_settings']['logo'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Logo URL'),
+    '#description' => t('Enter the relative location of your logo with respect to the Drupal root location.'),
+    '#default_value' => $preset['settings']['logo']
+  );
+  $form['logo_settings']['link'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Link URL'),
+    '#description' => t('Enter the website that the logo points to.'),
+    '#default_value' => $preset['settings']['link']
+  );
+
+  $form['plugins'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Plugins'),
+    '#weight' => -2,
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#theme' => 'osmplayer_plugin_table',
+    '#group' => 'player_settings',
+  );
+
+  // Iterate through all the plugins.
+  if (!empty($info['plugins'])) {
+    drupal_add_library('system', 'ui.dialog');
+    foreach ($info['plugins'] as $name => $plugin) {
+      $default = !empty($preset['settings']['plugins'][$name]) ? $preset['settings']['plugins'][$name] : 0;
+      $form['plugins'][$name] = array(
+        '#type' => 'checkbox',
+        '#default_value' => $default,
+      );
+    }
+  }
+  else {
+    $form['plugins']['no_plugins'] = array(
+      '#markup' => 'No plugins found.'
+    );
+  }
+
+  $form['misc'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Other Settings'),
+    '#weight' => 0,
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#group' => 'player_settings',
+  );
+
+  $form['misc']['debug'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable Player Debugging'),
+    '#description' => t('Select if you would like to see the debug statements from the Media Player.'),
+    '#default_value' => $preset['settings']['debug']
+  );
+  return $form;
+}
+
+/**
+ * Theme the plugin table.
+ *
+ * @param type $form
+ * @param type $form_state
+ */
+function theme_osmplayer_plugin_table($variables) {
+  $info = osmplayer_get_info();
+  $rows = array();
+  $header = array('', 'Title', 'Description', 'Preview');
+  $element = $variables['element'];
+  $js = '';
+  foreach ($info['plugins'] as $name => $plugin) {
+    if (!empty($plugin['preview'])) {
+      $js .= 'showPlugin' . $name . ' = function() {';
+      $js .= 'jQuery("body").prepend(\'<div id="dialog-modal" title="Preview"><img width="520px" height="340px" src="' . url($plugin['preview']) . '" /></div>\');';
+      $js .= 'jQuery("#dialog-modal").dialog({modal: true, width: 540, height: 400, resizable: false});';
+      $js .= '};';
+    }
+    $rows[] = array(
+      drupal_render($element[$name]),
+      $plugin['title'],
+      $plugin['description'],
+      !empty($plugin['preview']) ? '<a onclick="showPlugin' . $name . '();">Show Preview</a>' : 'None',
+    );
+  }
+
+  if ($js) {
+    // Add the JavaScipt to the page.
+    drupal_add_js($js, 'inline');
+  }
+
+  // Return this as a table.
+  return theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+  ));
+}
+
+/**
+ * Returns the player information provided by other modules.
+ * @return type
+ */
+function osmplayer_get_info() {
+
+  // Static cache the player info.
+  $player_info = &drupal_static(__FUNCTION__);
+  if (!isset($player_info)) {
+
+    // Get the information from cache...
+    $cache = cache_get('osmplayer_info');
+    if ($cache) {
+
+      // Set the player_info to the cached data.
+      $player_info = $cache->data;
+    }
+    else {
+
+      // Invoke all media_player_info and then set the cache.
+      $player_info = module_invoke_all('osmplayer_info');
+      cache_set('osmplayer_info', $player_info);
+    }
+  }
+  return $player_info;
+}
+
+/**
+ * Implementation of hook_osmplayer_player_info
+ */
+function osmplayer_osmplayer_info() {
+  $path = osmplayer_get_path();
+  return array(
+    'resources' => array(),
+    'themes' => osmplayer_get_themes($path . '/jquery-ui'),
+    'templates' => osmplayer_get_templates($path . '/templates'),
+    'plugins' => osmplayer_get_plugins($path . '/minplayer/plugins'),
+  );
+}
+
+/**
+ * Returns the themes available to the OSM Player.
+ * @return string
+ */
+function osmplayer_get_themes($base_path) {
+  $themes = array();
+  $path = getcwd() . '/' . $base_path . '/*';
+  foreach(glob($path, GLOB_ONLYDIR) as $dir) {
+    $name = basename($dir);
+    $theme_path = $base_path . '/' . $name;
+    foreach (glob($dir . '/*.css') as $css) {
+      $themes[$name] = array(
+        'url' => $theme_path . '/' . basename($css),
+        'options' => array('type' => 'file', 'group' => CSS_DEFAULT)
+      );
+      break;
+    }
+  }
+  return $themes;
+}
+
+/**
+ * Returns all of the osmplayer templates.
+ *
+ * @return string
+ */
+function osmplayer_get_templates($base_path) {
+  $templates = array();
+  $path = getcwd() . '/' . $base_path . '/*';
+  foreach (osmplayer_get_resources($path, $base_path) as $name => $resources) {
+    $templates[$name] = array(
+      'path' => $resources['path'],
+      'css' => $resources['css'],
+      'js' => $resources['js'],
+    );
+  }
+  return $templates;
+}
+
+/**
+ * Returns all of the osmplayer plugins.
+ *
+ * @return string
+ */
+function osmplayer_get_plugins($base_path) {
+  $plugins = array();
+  $path = getcwd() . '/' . $base_path . '/*';
+  foreach (osmplayer_get_resources($path, $base_path) as $name => $resources) {
+    $info = drupal_parse_info_file($resources['path'] . '/' . $name . '.info');
+    $plugins[$name] = array(
+      'title' => !empty($info['name']) ? $info['name'] : '',
+      'description' => !empty($info['description']) ? $info['description'] : '',
+      'path' => $resources['path'],
+      'css' => $resources['css'],
+      'js' => $resources['js'],
+      'preview' => array_pop($resources['images']),
+    );
+  }
+  return $plugins;
+}
+
+/**
+ * Gets the CSS and JS files within a directory.
+ */
+function osmplayer_get_resources($path, $base_path) {
+  $resources = array();
+
+  // The files for the resources.
+  if ($dirs = glob($path, GLOB_ONLYDIR)) {
+    foreach($dirs as $dir) {
+      $name = basename($dir);
+      $template_path = $base_path . '/' . $name;
+      $resources[$name] = array(
+        'path' => $template_path,
+      );
+
+      // Get all the images.
+      $images = array();
+      if ($files = glob($dir . '/*.png')) {
+        foreach ($files as $image) {
+          $image = basename($image);
+          $images[$template_path . '/' . $image] = $template_path . '/' . $image;
+        }
+      }
+
+      // Now add the js files.
+      $js_files = array();
+      if ($files = glob($dir . '/js/*.js')) {
+        foreach ($files as $js) {
+          $js_name = basename($js);
+          $js_files[$template_path . '/js/' . $js_name] = array('group' => JS_LIBRARY);
+        }
+      }
+
+      // Now get the css files.
+      $css_files = array();
+      if ($files = glob($dir . '/css/*.css')) {
+        foreach ($files as $css) {
+          $css_name = basename($css);
+          $css_files[$template_path . '/css/' . $css_name] = array('group' => CSS_THEME);
+        }
+      }
+
+      // Add these to the resources array.
+      $resources[$name]['js'] = $js_files;
+      $resources[$name]['css'] = $css_files;
+      $resources[$name]['images'] = $images;
+    }
+  }
+  return $resources;
+}

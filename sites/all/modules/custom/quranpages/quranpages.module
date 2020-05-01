@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the quranpages feature.
+ */
+
+include_once 'quranpages.features.inc';

@@ -1,0 +1,59 @@
+<?php
+/**
+ * Implements hook_schema().
+ */
+function timeline_bookmark_schema() {
+  $schema = array();
+  $schema['timeline_bookmark'] = array(
+    'description' => 'A user bookmark within media.',
+    'fields' => array(
+      'bid' => array(
+        'description' => 'The unique ID for this particular bookmark.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'entity_type' => array(
+        'description' => 'The bookmark type type, eg "node", "file", etc.',
+        'type' => 'varchar',
+        'length' => '128',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'description' => 'The unique ID of the object, such as either the {cid}, {uid}, or {nid}.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'uid' => array(
+        'description' => 'The user ID by whom this object was flagged.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'timestamp' => array(
+        'description' => 'The UNIX time stamp when the bookmark was made.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'disp-size' => 11,
+      ),
+      'mediatime' => array(
+        'description' => 'The seek position.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('bid'),
+    'indexes' => array(
+      'entity_type_entity_id_uid_mediatime' => array('entity_type', 'entity_id', 'uid', 'mediatime'),
+    ),
+  );
+  return $schema;
+}

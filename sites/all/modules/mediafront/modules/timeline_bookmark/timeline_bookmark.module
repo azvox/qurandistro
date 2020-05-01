@@ -1,0 +1,350 @@
+<?php
+
+include_once('timeline_bookmark.features.inc');
+
+/**
+ * Implements hook_menu().
+ */
+function timeline_bookmark_menu() {
+
+  // The timeline bookmark callback.
+  $items['timeline_bookmark/%user/%/%/%'] = array(
+    'title' => 'Timeline Bookmark',
+    'page callback' => 'timeline_bookmark_create',
+    'page arguments' => array(1, 2, 3, 4),
+    'access callback' => 'user_access',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // Delete confirmation for timeline bookmarks.
+  $items['timeline_bookmark/%user/%/%/%/delete'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('timeline_bookmark_delete_confirm', 1, 2, 3, 4),
+    'access callback' => 'user_access',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_osmplayer_info
+ */
+function timeline_bookmark_osmplayer_info() {
+  $path = drupal_get_path('module', 'timeline_bookmark');
+  return array(
+    'plugins' => array(
+      'timeline_bookmark' => array(
+        'title' => 'Timeline Bookmark',
+        'description' => 'Allows you to create timeline bookmarks.  NOTE: You must also have Timeline Indicator plugin enabled.',
+        'js' => array(
+          $path . '/js/timeline_bookmark.js' => array('group' => JS_LIBRARY)
+        ),
+        'css' => array(
+          $path . '/css/timeline_bookmark.css' => array('group' => CSS_THEME)
+        )
+      )
+    )
+  );
+}
+
+/**
+ * Implements hook_osmplayer_params
+ */
+function timeline_bookmark_osmplayer_params($params) {
+  global $user;
+
+  // Add the bookmark link.
+  if (!empty($user->uid) && !empty($params['variables']['#entity'])) {
+    $entity = $params['variables']['#entity'];
+    $link = '';
+    if (!empty($entity->nid)) {
+      $link = '/timeline_bookmark/' . $user->uid . '/node/' . $entity->nid;
+    }
+    drupal_add_js(array('timeline_bookmark_link' => $link), 'setting');
+  }
+  return array();
+}
+
+function timeline_bookmark_get_bookmark($account, $entity_type, $entity_id, $mediatime) {
+  $bookmark = null;
+
+  // Verify it is a legitimate bookmark.
+  if (!empty($account->uid) && !empty($entity_type) && !empty($entity_id) && !empty($mediatime)) {
+
+    // Setup our bookmark object.
+    $bookmark = (object)array(
+      'entity_type' => check_plain($entity_type),
+      'entity_id' => intval($entity_id),
+      'uid' => intval($account->uid),
+      'mediatime' => intval($mediatime)
+    );
+  }
+
+  return $bookmark;
+}
+
+/**
+ * Search for a timeline bookmark provided the account, entity_type, id, and mediatime.
+ * @param type $account
+ * @param type $entity_type
+ * @param type $entity_id
+ * @param type $mediatime
+ * @return null
+ */
+function timeline_bookmark_search($account, $entity_type, $entity_id, $mediatime) {
+
+  // Setup our bookmark object.
+  if ($bookmark = timeline_bookmark_get_bookmark($account, $entity_type, $entity_id, $mediatime)) {
+
+    // Return the timeline bookmark.
+    return timeline_bookmark_get($bookmark);
+  }
+
+  // Return null;
+  return null;
+}
+
+/**
+ * Create a new timeline bookmark.
+ *
+ * @param type $entity_type
+ * @param type $entity_id
+ * @param type $mediatime
+ */
+function timeline_bookmark_create($account, $entity_type, $entity_id, $mediatime) {
+  global $user;
+  $error = '';
+
+  // Verify it is a legitimate bookmark.
+  if ($bookmark = timeline_bookmark_get_bookmark($account, $entity_type, $entity_id, $mediatime)) {
+
+    // Only continue if the bookmark already exists.
+    if (!timeline_bookmark_get($bookmark)) {
+
+      // Check to make sure the user is logged in or is admin.
+      if (($user->uid == $account->uid) || user_access("administer nodes")) {
+
+        // Print out the result.
+        if ($bookmark = timeline_bookmark_save($bookmark)) {
+
+          // Print out a success message and the bookmark.
+          drupal_add_http_header('Content-Type', 'text/javascript; charset=utf-8');
+          print drupal_json_encode($bookmark);
+          drupal_exit();
+        }
+        else {
+          $error = 'Unable to save bookmark.';
+        }
+      }
+      else {
+        $error = 'Permission Denied.';
+      }
+    }
+    else {
+      $error = 'Bookmark already exists.';
+    }
+  }
+  else {
+    $error = 'Unknown parameters';
+  }
+
+  // An error occured...
+  drupal_add_http_header('Content-Type', 'text/javascript; charset=utf-8');
+  print drupal_json_encode(array(
+    'status' => FALSE,
+    'errorMessage' => $error,
+  ));
+  drupal_exit();
+}
+
+/**
+ * Saves the timeline bookmark.
+ *
+ * @param type $bookmark
+ */
+function timeline_bookmark_save($bookmark) {
+
+  // If they provide the bid, then this needs to be an update.
+  $bid = !empty($bookmark->bid) ? array('bid') : array();
+
+  // Set the time if it isn't provided.
+  if (empty($bid)) {
+    $bookmark->timestamp = time();
+  }
+
+  // Save or update a preset.
+  if (drupal_write_record('timeline_bookmark', $bookmark, $bid)) {
+    return $bookmark;
+  }
+  else {
+    return null;
+  }
+}
+
+/**
+ * Performs a check to make sure this user can delete content from a playlist.
+ *
+ * @param type $account
+ * @param type $playlist
+ * @param type $content
+ * @return type
+ */
+function timeline_bookmark_delete_check($account, $bookmark) {
+  global $user;
+
+  // First, check to make sure we have content.
+  if (empty($bookmark->bid)) {
+    drupal_set_message("No bookmark provided", "error");
+    return FALSE;
+  }
+
+  // Check to make sure an account was provided.
+  if (empty($account->uid)) {
+    drupal_set_message("No account provided", "error");
+    return FALSE;
+  }
+
+  // Check to make sure the user is logged in or is admin.
+  if (($user->uid != $account->uid) && !user_access("administer nodes")) {
+    drupal_set_message("You do not have permission to delete this bookmark.", "error");
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+/**
+ * Confirmation page for the timeline bookmark delete.
+ *
+ * @param type $bookmark
+ * @return boolean
+ */
+function timeline_bookmark_delete_confirm($form, $form_state, $account, $entity_type, $entity_id, $mediatime) {
+
+  // Search for their bookmark.
+  if ($bookmark = timeline_bookmark_search($account, $entity_type, $entity_id, $mediatime)) {
+
+    // Make sure we can delete.
+    if (timeline_bookmark_delete_check($account, $bookmark)) {
+
+      // Setup the form.
+      $form = array(
+        'bookmark' => array('#type' => 'value', '#value' => $bookmark),
+        'account' => array('#type' => 'value', '#value' => $account)
+      );
+
+      // Setup the question to ask.
+      $question = "Are you sure you want to delete this bookmark?";
+
+      // Get the destination.
+      $dest = drupal_get_destination();
+
+      // Return the confirm form.
+      return confirm_form($form, $question, $dest['destination']);
+    }
+  }
+
+  // Don't think so...
+  return drupal_access_denied();
+}
+
+/**
+ * The confirmation delete.
+ *
+ * @param type $form
+ * @param type $form_state
+ */
+function timeline_bookmark_delete_confirm_submit($form, &$form_state) {
+
+  // Get our variables.
+  $account = $form_state['values']['account'];
+  $bookmark = $form_state['values']['bookmark'];
+
+  // Make sure we can delete.
+  if (timeline_bookmark_delete_check($account, $bookmark)) {
+
+    // Delete the bookmark.
+    if (timeline_bookmark_delete($bookmark)) {
+
+      // Say we deleted the bookmark.
+      drupal_set_message("Bookmark deleted.");
+    }
+  }
+}
+
+/**
+ * Delete a timeline bookmark.
+ *
+ * @param type $bookmark
+ * @return boolean
+ */
+function timeline_bookmark_delete($bookmark) {
+
+  // Make sure the bookmark exists.
+  if (!empty($bookmark->bid)) {
+    db_delete('timeline_bookmark')->condition('bid', intval($bookmark->bid))->execute();
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Gets a bookmark object.
+ *
+ * @param type $bookmark
+ * @return type
+ */
+function timeline_bookmark_get($bookmark) {
+
+  // If it has a bookmark ID, then just get it from that.
+  if (!empty($bookmark->bid)) {
+
+    // Return the timeline bookmark.
+    return timeline_bookmark_load($bookmark->bid);
+  }
+
+  // Otherwise check the four ID criteria.
+  else if (!empty($bookmark->entity_type) &&
+      !empty($bookmark->entity_id) &&
+      !empty($bookmark->uid) &&
+      !empty($bookmark->mediatime)) {
+
+    // Return the database entry.
+    return db_select('timeline_bookmark', 'tb')
+          ->fields('tb')
+          ->condition('tb.entity_type', check_plain($bookmark->entity_type))
+          ->condition('tb.entity_id', intval($bookmark->entity_id))
+          ->condition('tb.uid', intval($bookmark->uid))
+          ->condition('tb.mediatime', intval($bookmark->mediatime))
+          ->execute()
+          ->fetchObject();
+  }
+}
+
+/**
+ * Loads a timeline bookmark provided a bookmark ID.
+ *
+ * @param type $bid
+ * @return null
+ */
+function timeline_bookmark_load($bid) {
+
+  // Make sure the bookmark id isn't empty.
+  if (!empty($bid)) {
+
+    // Get the timeline bookmark.
+    return db_select('timeline_bookmark', 'tb')
+        ->fields('tb')
+        ->condition('tb.bid', intval($bid))
+        ->execute()
+        ->fetchObject();
+  }
+  else {
+
+    // Return null.
+    return null;
+  }
+}
